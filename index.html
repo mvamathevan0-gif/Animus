@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ANIMUS Vision Interface</title>
+  <!-- MediaPipe Core Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #080b10;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 70%),
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .viewport {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      background: #0d1117;
+      overflow: hidden;
+    }
+
+    .viewport::before, .viewport::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-color: #00f0ff;
+      border-style: solid;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .viewport::before {
+      top: 10px;
+      left: 10px;
+      border-width: 2px 0 0 2px;
+    }
+
+    .viewport::after {
+      bottom: 10px;
+      right: 10px;
+      border-width: 0 2px 2px 0;
+    }
+
+    video {
+      display: none;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <video id="webcam" playsinline></video>
+    <canvas id="output_canvas" width="640" height="480"></canvas>
+  </div>
+
+  <script>
+    const videoElement = document.getElementById('webcam');
+    const canvasElement = document.getElementById('output_canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+
+    // =========================================================================
+    // 1. WEBSOCKET CONNECTION MANAGER
+    // =========================================================================
+    let ws = null;
+    
+    function connectWebSocket() {
+      ws = new WebSocket('ws://localhost:8765');
+
+      ws.onopen = () => {
+        console.log('[ANIMUS Vision] Connected to Python WebSocket Server');
+      };
+
+      ws.onclose = () => {
+        setTimeout(connectWebSocket, 2000);
+      };
+
+      ws.onerror = (err) => {
+        ws.close();
+      };
+    }
+
+    connectWebSocket();
+
+    // =========================================================================
+    // 2. ROBOT HAND SERVO ANGLE MATH
+    // =========================================================================
+    function getDistance3D(p1, p2) {
+      return Math.sqrt(
+        Math.pow(p1.x - p2.x, 2) +
+        Math.pow(p1.y - p2.y, 2) +
+        Math.pow(p1.z - p2.z, 2)
+      );
+    }
+
+    function calculateServoAngles(landmarks) {
+      const wrist = landmarks[0];
+      const tips = [4, 8, 12, 16, 20];
+      const bases = [2, 5, 9, 13, 17];
+      let angles = [];
+
+      for (let i = 0; i < 5; i++) {
+        const tipDist = getDistance3D(landmarks[tips[i]], wrist);
+        const baseDist = getDistance3D(landmarks[bases[i]], wrist);
+        let ratio = tipDist / (baseDist * 1.8);
+        ratio = Math.max(0.4, Math.min(1.0, ratio));
+        let angle = Math.round(((ratio - 0.4) / 0.6) * 180);
+        angles.push(angle);
+      }
+
+      return {
+        thumb: angles[0],
+        index: angles[1],
+        middle: angles[2],
+        ring: angles[3],
+        pinky: angles[4]
+      };
+    }
+
+    // =========================================================================
+    // 3. GESTURE DETECTION & TIMING LOGIC
+    // =========================================================================
+    let fistStartTime = null;
+    let lastActionTime = 0;
+    const ACTION_COOLDOWN_MS = 1500;
+    const FIST_HOLD_DURATION_MS = 5000;
+
+    function classifyGesture(landmarks) {
+      const indexTip = landmarks[8];
+      const middleTip = landmarks[12];
+      const ringTip = landmarks[16];
+      const pinkyTip = landmarks[20];
+
+      const indexOpen = indexTip.y < landmarks[6].y;
+      const middleOpen = middleTip.y < landmarks[10].y;
+      const ringOpen = ringTip.y < landmarks[14].y;
+      const pinkyOpen = pinkyTip.y < landmarks[18].y;
+
+      if (!indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+        return "FIST";
+      } else if (indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+        return "SHUSH_MUTE"; // Index finger raised alone
+      } else if (indexOpen && middleOpen && !ringOpen && !pinkyOpen) {
+        return "PEACE_SIGN";
+      } else if (indexOpen && middleOpen && ringOpen && pinkyOpen) {
+        return "OPEN_PALM";
+      }
+
+      return "OTHER";
+    }
+
+    function processGestureState(currentGesture) {
+      const now = Date.now();
+
+      // 1. OPEN PALM (Open Terminal)
+      if (currentGesture === "OPEN_PALM") {
+        fistStartTime = null;
+        if (now - lastActionTime > ACTION_COOLDOWN_MS) {
+          sendAction("OPEN_TERMINAL");
+          lastActionTime = now;
+        }
+      } 
+      // 2. SHUSH GESTURE (Toggle Mute)
+      else if (currentGesture === "SHUSH_MUTE") {
+        fistStartTime = null;
+        if (now - lastActionTime > ACTION_COOLDOWN_MS) {
+          sendAction("TOGGLE_MUTE");
+          lastActionTime = now;
+        }
+      }
+      // 3. PEACE SIGN (Open 9/11 Memorial Web Page)
+      else if (currentGesture === "PEACE_SIGN") {
+        fistStartTime = null;
+        if (now - lastActionTime > ACTION_COOLDOWN_MS) {
+          sendAction("OPEN_911_PAGE");
+          lastActionTime = now;
+        }
+      } 
+      // 4. FIST (Hold for 5 seconds to close window)
+      else if (currentGesture === "FIST") {
+        if (!fistStartTime) {
+          fistStartTime = now;
+        } else if (now - fistStartTime >= FIST_HOLD_DURATION_MS) {
+          if (now - lastActionTime > ACTION_COOLDOWN_MS) {
+            sendAction("CLOSE_WINDOW");
+            lastActionTime = now;
+            fistStartTime = null;
+          }
+        }
+      } 
+      else {
+        fistStartTime = null;
+      }
+    }
+
+    function sendAction(actionName) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        console.log(`[ANIMUS Vision] Triggering Action: ${actionName}`);
+        ws.send(JSON.stringify({
+          type: "gesture_command",
+          action: actionName
+        }));
+      }
+    }
+
+    // =========================================================================
+    // 4. MEDIAPIPE FRAME RENDERING LOOP
+    // =========================================================================
+    function onResults(results) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const handLandmarks = results.multiHandLandmarks[0];
+
+        // Draw connections (Neon Cyan)
+        drawConnectors(canvasCtx, handLandmarks, HAND_CONNECTIONS, {
+          color: '#00f0ff',
+          lineWidth: 2
+        });
+
+        // Draw joint nodes (Magenta glow)
+        drawLandmarks(canvasCtx, handLandmarks, {
+          color: '#ff0055',
+          fillColor: '#ffffff',
+          lineWidth: 1,
+          radius: 3
+        });
+
+        // Calculate angles and process gesture logic
+        const angles = calculateServoAngles(handLandmarks);
+        const gesture = classifyGesture(handLandmarks);
+        processGestureState(gesture);
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "robot_hand_angles",
+            data: angles
+          }));
+        }
+      } else {
+        fistStartTime = null;
+      }
+
+      canvasCtx.restore();
+    }
+
+    const hands = new Hands({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 0,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    hands.onResults(onResults);
+
+    let isProcessing = false;
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        if (!isProcessing) {
+          isProcessing = true;
+          await hands.send({ image: videoElement });
+          isProcessing = false;
+        }
+      },
+      width: 640,
+      height: 480
+    });
+
+    camera.start();
+  </script>
+</body>
+</html>
