@@ -2,13 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ANIMUS Vision Interface</title>
-  <!-- MediaPipe Core Dependencies -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PROJECT ANIMUS — Cybernetic Vision & Voice HUD</title>
+
+  <!-- MediaPipe Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
   <style>
+    :root {
+      --cyan: #00f0ff;
+      --magenta: #ff0055;
+      --dark-bg: #06090e;
+      --card-bg: rgba(13, 17, 23, 0.85);
+      --font-mono: 'Courier New', Courier, monospace;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -16,73 +26,359 @@
     }
 
     body {
-      background: #080b10;
+      background-color: var(--dark-bg);
       background-image: 
-        radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 70%),
+        radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 80%),
         linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-      background-size: 100% 100%, 40px 40px, 40px 40px;
+      background-size: 100% 100%, 30px 30px, 30px 30px;
+      color: #ffffff;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       height: 100vh;
+      overflow: hidden;
       display: flex;
       justify-content: center;
       align-items: center;
-      overflow: hidden;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    .viewport {
-      position: relative;
-      width: 640px;
-      height: 480px;
-      border-radius: 12px;
-      box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.1);
+    /* =========================================================================
+       1. LANDING HOME PAGE STYLES
+       ========================================================================= */
+    #home-screen {
+      text-align: center;
+      max-width: 800px;
+      padding: 40px;
+      background: var(--card-bg);
       border: 1px solid rgba(0, 240, 255, 0.3);
-      background: #0d1117;
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .title-tag {
+      font-family: var(--font-mono);
+      color: var(--cyan);
+      font-size: 14px;
+      letter-spacing: 4px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 15px;
+    }
+
+    p.subtitle {
+      color: #8b949e;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 35px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #c9d1d9;
+    }
+
+    .feature-card strong {
+      display: block;
+      color: var(--cyan);
+      margin-bottom: 5px;
+      font-family: var(--font-mono);
+    }
+
+    .launch-btn {
+      background: transparent;
+      color: var(--cyan);
+      border: 2px solid var(--cyan);
+      padding: 16px 36px;
+      font-size: 16px;
+      font-weight: bold;
+      font-family: var(--font-mono);
+      letter-spacing: 2px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .launch-btn:hover {
+      background: var(--cyan);
+      color: #000;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+      transform: translateY(-2px);
+    }
+
+    /* =========================================================================
+       2. HUD VIEWPORT & TELEMETRY STYLES
+       ========================================================================= */
+    #hud-screen {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      padding: 20px;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .viewport-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-height: 720px;
+      background: #000;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
       overflow: hidden;
     }
 
-    .viewport::before, .viewport::after {
-      content: '';
+    video { display: none; }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    /* Overlay HUD Bar */
+    .hud-header {
       position: absolute;
-      width: 20px;
-      height: 20px;
-      border-color: #00f0ff;
-      border-style: solid;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       z-index: 10;
       pointer-events: none;
     }
 
-    .viewport::before {
-      top: 10px;
-      left: 10px;
-      border-width: 2px 0 0 2px;
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--cyan);
+      background: rgba(6, 9, 14, 0.7);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 240, 255, 0.3);
     }
 
-    .viewport::after {
-      bottom: 10px;
-      right: 10px;
-      border-width: 0 2px 2px 0;
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--cyan);
+      animation: pulse 1.5s infinite;
     }
 
-    video {
-      display: none;
+    @keyframes pulse {
+      0% { opacity: 0.2; }
+      50% { opacity: 1; }
+      100% { opacity: 0.2; }
     }
 
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
+    /* Telemetry Sidebar */
+    .telemetry-sidebar {
+      background: var(--card-bg);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 12px;
+      padding: 20px;
       height: 100%;
-      transform: scaleX(-1);
+      max-height: 720px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(10px);
+    }
+
+    .sidebar-title {
+      font-family: var(--font-mono);
+      color: var(--cyan);
+      font-size: 14px;
+      letter-spacing: 2px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .joint-metric {
+      margin-bottom: 15px;
+    }
+
+    .joint-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 5px;
+    }
+
+    .joint-label span.val {
+      color: var(--cyan);
+      font-weight: bold;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 240, 255, 0.1);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--magenta));
+      transition: width 0.1s linear;
+    }
+
+    /* Voice Terminal Box */
+    .voice-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .voice-status {
+      color: var(--magenta);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .transcript-text {
+      color: #c9d1d9;
+      min-height: 36px;
+      word-break: break-word;
     }
   </style>
 </head>
 <body>
 
-  <div class="viewport">
-    <video id="webcam" playsinline></video>
-    <canvas id="output_canvas" width="640" height="480"></canvas>
+  <!-- =========================================================================
+       LANDING HOME PAGE
+       ========================================================================= -->
+  <div id="home-screen">
+    <div class="title-tag">Project ANIMUS v2 • Interface</div>
+    <h1>Multimodal Cybernetic Control System</h1>
+    <p class="subtitle">
+      Real-time computer vision, 5-axis kinematic joint telemetry, and WebSocket voice control bridge for external hardware robotics.
+    </p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <strong>VISION ENGINE</strong>
+        MediaPipe Single-Hand Tracking with low-latency GPU acceleration.
+      </div>
+      <div class="feature-card">
+        <strong>VOICE CONTROL</strong>
+        Browser Web Speech API engine with active wake-word processing.
+      </div>
+      <div class="feature-card">
+        <strong>KINEMATICS</strong>
+        Dynamic 5-finger angular mapping for robotic servo translation.
+      </div>
+    </div>
+
+    <button class="launch-btn" onclick="launchHUD()">CONNECT ROBOTIC HAND & LAUNCH HUD</button>
+  </div>
+
+  <!-- =========================================================================
+       LIVE HUD & TELEMETRY DASHBOARD
+       ========================================================================= -->
+  <div id="hud-screen">
+    <div class="viewport-container">
+      <div class="hud-header">
+        <div class="status-badge">
+          <div class="pulse-dot"></div>
+          ANIMUS VISION STREAMING
+        </div>
+        <div class="status-badge" id="ws-status">
+          WS: DISCONNECTED
+        </div>
+      </div>
+
+      <video id="webcam" playsinline></video>
+      <canvas id="output_canvas" width="1280" height="720"></canvas>
+    </div>
+
+    <!-- Telemetry Sidebar -->
+    <div class="telemetry-sidebar">
+      <div>
+        <div class="sidebar-title">SERVO KINEMATICS</div>
+
+        <!-- Thumb -->
+        <div class="joint-metric">
+          <div class="joint-label">THUMB JOINT <span class="val" id="val-thumb">180°</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-thumb" style="width: 100%;"></div></div>
+        </div>
+
+        <!-- Index -->
+        <div class="joint-metric">
+          <div class="joint-label">INDEX FINGER <span class="val" id="val-index">180°</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-index" style="width: 100%;"></div></div>
+        </div>
+
+        <!-- Middle -->
+        <div class="joint-metric">
+          <div class="joint-label">MIDDLE FINGER <span class="val" id="val-middle">180°</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-middle" style="width: 100%;"></div></div>
+        </div>
+
+        <!-- Ring -->
+        <div class="joint-metric">
+          <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-ring" style="width: 100%;"></div></div>
+        </div>
+
+        <!-- Pinky -->
+        <div class="joint-metric">
+          <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-pinky" style="width: 100%;"></div></div>
+        </div>
+      </div>
+
+      <!-- Voice Assistant Panel -->
+      <div class="voice-box">
+        <div class="voice-status">
+          <span style="color: var(--cyan);">●</span> VOICE ENGINE: <span id="speech-state">INITIALIZING...</span>
+        </div>
+        <div class="transcript-text" id="transcript-display">Say "Jarvis" followed by a command...</div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -90,220 +386,21 @@
     const canvasElement = document.getElementById('output_canvas');
     const canvasCtx = canvasElement.getContext('2d');
 
-    // =========================================================================
-    // 1. WEBSOCKET CONNECTION MANAGER
-    // =========================================================================
     let ws = null;
-    
+
+    // =========================================================================
+    // 1. WEBSOCKET BRIDGE
+    // =========================================================================
     function connectWebSocket() {
+      // Connects locally or through ngrok tunnel
       ws = new WebSocket('ws://localhost:8765');
 
       ws.onopen = () => {
-        console.log('[ANIMUS Vision] Connected to Python WebSocket Server');
+        document.getElementById('ws-status').innerText = 'WS: CONNECTED';
+        document.getElementById('ws-status').style.borderColor = '#00f0ff';
+        document.getElementById('ws-status').style.color = '#00f0ff';
       };
 
       ws.onclose = () => {
-        setTimeout(connectWebSocket, 2000);
-      };
-
-      ws.onerror = (err) => {
-        ws.close();
-      };
-    }
-
-    connectWebSocket();
-
-    // =========================================================================
-    // 2. ROBOT HAND SERVO ANGLE MATH
-    // =========================================================================
-    function getDistance3D(p1, p2) {
-      return Math.sqrt(
-        Math.pow(p1.x - p2.x, 2) +
-        Math.pow(p1.y - p2.y, 2) +
-        Math.pow(p1.z - p2.z, 2)
-      );
-    }
-
-    function calculateServoAngles(landmarks) {
-      const wrist = landmarks[0];
-      const tips = [4, 8, 12, 16, 20];
-      const bases = [2, 5, 9, 13, 17];
-      let angles = [];
-
-      for (let i = 0; i < 5; i++) {
-        const tipDist = getDistance3D(landmarks[tips[i]], wrist);
-        const baseDist = getDistance3D(landmarks[bases[i]], wrist);
-        let ratio = tipDist / (baseDist * 1.8);
-        ratio = Math.max(0.4, Math.min(1.0, ratio));
-        let angle = Math.round(((ratio - 0.4) / 0.6) * 180);
-        angles.push(angle);
-      }
-
-      return {
-        thumb: angles[0],
-        index: angles[1],
-        middle: angles[2],
-        ring: angles[3],
-        pinky: angles[4]
-      };
-    }
-
-    // =========================================================================
-    // 3. GESTURE DETECTION & TIMING LOGIC
-    // =========================================================================
-    let fistStartTime = null;
-    let lastActionTime = 0;
-    const ACTION_COOLDOWN_MS = 1500;
-    const FIST_HOLD_DURATION_MS = 5000;
-
-    function classifyGesture(landmarks) {
-      const indexTip = landmarks[8];
-      const middleTip = landmarks[12];
-      const ringTip = landmarks[16];
-      const pinkyTip = landmarks[20];
-
-      const indexOpen = indexTip.y < landmarks[6].y;
-      const middleOpen = middleTip.y < landmarks[10].y;
-      const ringOpen = ringTip.y < landmarks[14].y;
-      const pinkyOpen = pinkyTip.y < landmarks[18].y;
-
-      if (!indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
-        return "FIST";
-      } else if (indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
-        return "SHUSH_MUTE"; // Index finger raised alone
-      } else if (indexOpen && middleOpen && !ringOpen && !pinkyOpen) {
-        return "PEACE_SIGN";
-      } else if (indexOpen && middleOpen && ringOpen && pinkyOpen) {
-        return "OPEN_PALM";
-      }
-
-      return "OTHER";
-    }
-
-    function processGestureState(currentGesture) {
-      const now = Date.now();
-
-      // 1. OPEN PALM (Open Terminal)
-      if (currentGesture === "OPEN_PALM") {
-        fistStartTime = null;
-        if (now - lastActionTime > ACTION_COOLDOWN_MS) {
-          sendAction("OPEN_TERMINAL");
-          lastActionTime = now;
-        }
-      } 
-      // 2. SHUSH GESTURE (Toggle Mute)
-      else if (currentGesture === "SHUSH_MUTE") {
-        fistStartTime = null;
-        if (now - lastActionTime > ACTION_COOLDOWN_MS) {
-          sendAction("TOGGLE_MUTE");
-          lastActionTime = now;
-        }
-      }
-      // 3. PEACE SIGN (Open 9/11 Memorial Web Page)
-      else if (currentGesture === "PEACE_SIGN") {
-        fistStartTime = null;
-        if (now - lastActionTime > ACTION_COOLDOWN_MS) {
-          sendAction("OPEN_911_PAGE");
-          lastActionTime = now;
-        }
-      } 
-      // 4. FIST (Hold for 5 seconds to close window)
-      else if (currentGesture === "FIST") {
-        if (!fistStartTime) {
-          fistStartTime = now;
-        } else if (now - fistStartTime >= FIST_HOLD_DURATION_MS) {
-          if (now - lastActionTime > ACTION_COOLDOWN_MS) {
-            sendAction("CLOSE_WINDOW");
-            lastActionTime = now;
-            fistStartTime = null;
-          }
-        }
-      } 
-      else {
-        fistStartTime = null;
-      }
-    }
-
-    function sendAction(actionName) {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        console.log(`[ANIMUS Vision] Triggering Action: ${actionName}`);
-        ws.send(JSON.stringify({
-          type: "gesture_command",
-          action: actionName
-        }));
-      }
-    }
-
-    // =========================================================================
-    // 4. MEDIAPIPE FRAME RENDERING LOOP
-    // =========================================================================
-    function onResults(results) {
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const handLandmarks = results.multiHandLandmarks[0];
-
-        // Draw connections (Neon Cyan)
-        drawConnectors(canvasCtx, handLandmarks, HAND_CONNECTIONS, {
-          color: '#00f0ff',
-          lineWidth: 2
-        });
-
-        // Draw joint nodes (Magenta glow)
-        drawLandmarks(canvasCtx, handLandmarks, {
-          color: '#ff0055',
-          fillColor: '#ffffff',
-          lineWidth: 1,
-          radius: 3
-        });
-
-        // Calculate angles and process gesture logic
-        const angles = calculateServoAngles(handLandmarks);
-        const gesture = classifyGesture(handLandmarks);
-        processGestureState(gesture);
-
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: "robot_hand_angles",
-            data: angles
-          }));
-        }
-      } else {
-        fistStartTime = null;
-      }
-
-      canvasCtx.restore();
-    }
-
-    const hands = new Hands({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-    });
-
-    hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 0,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
-
-    hands.onResults(onResults);
-
-    let isProcessing = false;
-    const camera = new Camera(videoElement, {
-      onFrame: async () => {
-        if (!isProcessing) {
-          isProcessing = true;
-          await hands.send({ image: videoElement });
-          isProcessing = false;
-        }
-      },
-      width: 640,
-      height: 480
-    });
-
-    camera.start();
-  </script>
-</body>
-</html>
+        document.getElementById('ws-status').innerText = 'WS: DISCONNECTED';
+        document.getElementById('ws-status').style.borderColor =
