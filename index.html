@@ -54,7 +54,7 @@
       box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
       backdrop-filter: blur(10px);
       z-index: 100;
-      transition: opacity 0.5s ease, transform 0.5s ease;
+      transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
     .title-tag {
@@ -360,47 +360,4 @@
 
         <!-- Ring -->
         <div class="joint-metric">
-          <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
-          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-ring" style="width: 100%;"></div></div>
-        </div>
-
-        <!-- Pinky -->
-        <div class="joint-metric">
-          <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
-          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-pinky" style="width: 100%;"></div></div>
-        </div>
-      </div>
-
-      <!-- Voice Assistant Panel -->
-      <div class="voice-box">
-        <div class="voice-status">
-          <span style="color: var(--cyan);">●</span> VOICE ENGINE: <span id="speech-state">INITIALIZING...</span>
-        </div>
-        <div class="transcript-text" id="transcript-display">Say "Jarvis" followed by a command...</div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const videoElement = document.getElementById('webcam');
-    const canvasElement = document.getElementById('output_canvas');
-    const canvasCtx = canvasElement.getContext('2d');
-
-    let ws = null;
-
-    // =========================================================================
-    // 1. WEBSOCKET BRIDGE
-    // =========================================================================
-    function connectWebSocket() {
-      // Connects locally or through ngrok tunnel
-      ws = new WebSocket('ws://localhost:8765');
-
-      ws.onopen = () => {
-        document.getElementById('ws-status').innerText = 'WS: CONNECTED';
-        document.getElementById('ws-status').style.borderColor = '#00f0ff';
-        document.getElementById('ws-status').style.color = '#00f0ff';
-      };
-
-      ws.onclose = () => {
-        document.getElementById('ws-status').innerText = 'WS: DISCONNECTED';
-        document.getElementById('ws-status').style.borderColor =
+          <div class="joint-label">RING FINGER <span class="
