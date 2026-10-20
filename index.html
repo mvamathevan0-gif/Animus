@@ -40,9 +40,6 @@
       align-items: center;
     }
 
-    /* =========================================================================
-       1. LANDING PAGE
-       ========================================================================= */
     #home-screen {
       text-align: center;
       max-width: 720px;
@@ -99,9 +96,6 @@
       box-shadow: 0 0 25px rgba(66, 133, 244, 0.5);
     }
 
-    /* =========================================================================
-       2. PROFESSIONAL DASHBOARD & SPLIT-SCREEN LAYOUT
-       ========================================================================= */
     #hud-screen {
       display: none;
       width: 100vw;
@@ -110,7 +104,6 @@
       position: relative;
     }
 
-    /* Navigation Header */
     .top-navbar {
       height: 60px;
       padding: 0 25px;
@@ -182,7 +175,6 @@
       box-shadow: 0 0 10px rgba(66, 133, 244, 0.3);
     }
 
-    /* Main Workspace Split */
     .dashboard-body {
       flex: 1;
       display: grid;
@@ -192,7 +184,6 @@
       overflow: hidden;
     }
 
-    /* Contained Camera Window */
     .camera-card {
       background: var(--card-base);
       border: 1px solid var(--card-border);
@@ -213,7 +204,6 @@
       transform: scaleX(-1);
     }
 
-    /* Direct Telemetry Card */
     .telemetry-card {
       background: var(--card-base);
       border: 1px solid var(--card-border);
@@ -261,9 +251,6 @@
       transition: width 0.1s linear;
     }
 
-    /* =========================================================================
-       3. SLIDE-OUT DRAWER (CONTROLLED BY ☰ ICON)
-       ========================================================================= */
     .side-drawer {
       position: absolute;
       top: 60px;
@@ -286,9 +273,6 @@
       right: 0;
     }
 
-    /* =========================================================================
-       4. EXPANDABLE VOICE OVERLAY MODAL
-       ========================================================================= */
     .voice-modal {
       position: absolute;
       bottom: 30px;
@@ -385,17 +369,15 @@
           CORE ACTIVE
         </div>
       </div>
-      <button class="hamburger-btn" onclick="toggleDrawer()" title="Toggle Telemetry Sidebar">☰</button>
+      <button class="hamburger-btn" id="drawer-toggle-btn" title="Toggle Telemetry Sidebar">☰</button>
     </header>
 
     <main class="dashboard-body">
-      <!-- Contained Camera Viewport -->
       <div class="camera-card">
         <video id="webcam" playsinline></video>
         <canvas id="output_canvas" width="1280" height="720"></canvas>
       </div>
 
-      <!-- Telemetry Card Panel -->
       <div class="telemetry-card">
         <div>
           <div class="card-header-title">SERVO KINEMATICS</div>
@@ -428,7 +410,6 @@
       </div>
     </main>
 
-    <!-- SLIDE-OUT DRAWER FOR ADDITIONAL DATA -->
     <div class="side-drawer" id="side-drawer">
       <div>
         <div class="card-header-title">SYSTEM DIAGNOSTICS</div>
@@ -444,7 +425,6 @@
       </div>
     </div>
 
-    <!-- EXPANDABLE VOICE OVERLAY MODAL -->
     <div class="voice-modal" id="voice-modal">
       <div class="voice-modal-header">
         <div class="voice-wave">
@@ -460,19 +440,149 @@
   </div>
 
   <script>
-    function toggleDrawer() {
-      document.getElementById('side-drawer').classList.toggle('open');
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const drawerBtn = document.getElementById('drawer-toggle-btn');
+      if (drawerBtn) {
+        drawerBtn.addEventListener('click', () => {
+          document.getElementById('side-drawer').classList.toggle('open');
+        });
+      }
 
-    document.getElementById('start-btn').addEventListener('click', async () => {
-      document.getElementById('home-screen').style.display = 'none';
-      document.getElementById('hud-screen').style.display = 'flex';
+      const startBtn = document.getElementById('start-btn');
+      startBtn.addEventListener('click', async () => {
+        // Force screen transition immediately
+        document.getElementById('home-screen').style.display = 'none';
+        document.getElementById('hud-screen').style.display = 'flex';
 
-      const videoElement = document.getElementById('webcam');
-      const canvasElement = document.getElementById('output_canvas');
-      const canvasCtx = canvasElement.getContext('2d');
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
-        videoElement.srcObject = stream;
-        await videoElement.play
+        // Check MediaPipe availability
+        if (typeof Hands === 'undefined') {
+          alert('MediaPipe failed to load from CDN. Please refresh the page.');
+          return;
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+          videoElement.srcObject = stream;
+          await videoElement.play();
+        } catch (err) {
+          alert('Camera permission denied or camera missing: ' + err.message);
+          return;
+        }
+
+        const hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 0,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
+
+        hands.onResults((results) => {
+          canvasCtx.save();
+          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+          canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+          if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            const landmarks = results.multiHandLandmarks[0];
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#4285F4', lineWidth: 3 });
+            drawLandmarks(canvasCtx, landmarks, { color: '#FF3344', fillColor: '#FFFFFF', radius: 4 });
+
+            const wrist = landmarks[0];
+            const tips = [4, 8, 12, 16, 20];
+            const names = ['thumb', 'index', 'middle', 'ring', 'pinky'];
+
+            tips.forEach((tipIdx, i) => {
+              const tip = landmarks[tipIdx];
+              const dist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+              let angle = Math.round(Math.min(180, Math.max(0, (dist / 0.5) * 180)));
+              document.getElementById(`val-${names[i]}`).innerText = `${angle}°`;
+              document.getElementById(`bar-${names[i]}`).style.width = `${(angle / 180) * 100}%`;
+            });
+          }
+          canvasCtx.restore();
+        });
+
+        async function processFrame() {
+          if (!videoElement.paused && !videoElement.ended) {
+            await hands.send({ image: videoElement });
+          }
+          requestAnimationFrame(processFrame);
+        }
+        processFrame();
+
+        // Speech Engine
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+
+          const modal = document.getElementById('voice-modal');
+          const transcriptEl = document.getElementById('modal-transcript');
+          const replyEl = document.getElementById('modal-reply');
+          let isProcessing = false;
+
+          function speakResponse(text) {
+            replyEl.style.display = 'block';
+            replyEl.innerText = `Jarvis: "${text}"`;
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+
+            utterance.onend = () => {
+              setTimeout(() => {
+                modal.classList.remove('active');
+                replyEl.style.display = 'none';
+                isProcessing = false;
+              }, 2500);
+            };
+
+            window.speechSynthesis.speak(utterance);
+          }
+
+          function generateAIAnswer(query) {
+            const q = query.toLowerCase();
+            if (q.includes('status') || q.includes('system')) {
+              return "All telemetry channels are operational. Kinematic servo sync active.";
+            } else if (q.includes('who are you') || q.includes('your name')) {
+              return "I am ANIMUS, a cybernetic vision and robotic control assistant.";
+            } else if (q.includes('hand') || q.includes('servo')) {
+              return "Robotic hand joint angles are tracking smoothly across all five axes.";
+            } else {
+              return `Processing request for: ${query}. Command executed successfully.`;
+            }
+          }
+
+          recognition.onresult = (event) => {
+            if (isProcessing) return;
+
+            let text = event.results[event.results.length - 1][0].transcript.trim();
+
+            if (text.toLowerCase().includes('jarvis')) {
+              modal.classList.add('active');
+              transcriptEl.innerText = `"${text}"`;
+
+              const cleanQuery = text.toLowerCase().replace('jarvis', '').trim();
+              if (cleanQuery.length > 2) {
+                isProcessing = true;
+                const reply = generateAIAnswer(cleanQuery);
+                speakResponse(reply);
+              }
+            }
+          };
+
+          recognition.start();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
