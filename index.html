@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PROJECT ANIMUS — Cybernetic Vision & Voice HUD</title>
 
-  <!-- MediaPipe Libraries -->
+  <!-- MediaPipe CDN Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
@@ -15,25 +15,17 @@
       --cyan: #00f0ff;
       --magenta: #ff0055;
       --dark-bg: #06090e;
-      --card-bg: rgba(13, 17, 23, 0.85);
+      --card-bg: rgba(13, 17, 23, 0.9);
       --font-mono: 'Courier New', Courier, monospace;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background-color: var(--dark-bg);
-      background-image: 
-        radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 80%),
-        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-      background-size: 100% 100%, 30px 30px, 30px 30px;
+      background-image: radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 80%);
       color: #ffffff;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', system-ui, sans-serif;
       height: 100vh;
       overflow: hidden;
       display: flex;
@@ -41,323 +33,223 @@
       align-items: center;
     }
 
-    /* =========================================================================
-       1. LANDING HOME PAGE STYLES
-       ========================================================================= */
+    /* Landing Screen */
     #home-screen {
       text-align: center;
-      max-width: 800px;
+      max-width: 700px;
       padding: 40px;
       background: var(--card-bg);
-      border: 1px solid rgba(0, 240, 255, 0.3);
+      border: 1px solid rgba(0, 240, 255, 0.4);
       border-radius: 16px;
-      box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
-      backdrop-filter: blur(10px);
-      z-index: 100;
-      transition: opacity 0.4s ease, transform 0.4s ease;
-    }
-
-    .title-tag {
-      font-family: var(--font-mono);
-      color: var(--cyan);
-      font-size: 14px;
-      letter-spacing: 4px;
-      margin-bottom: 10px;
-      text-transform: uppercase;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
     }
 
     h1 {
-      font-size: 42px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: 36px;
       margin-bottom: 15px;
+      color: #fff;
     }
 
     p.subtitle {
       color: #8b949e;
-      font-size: 16px;
-      line-height: 1.6;
+      font-size: 15px;
       margin-bottom: 30px;
     }
 
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-      margin-bottom: 35px;
-    }
-
-    .feature-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 15px;
-      border-radius: 8px;
-      font-size: 13px;
-      color: #c9d1d9;
-    }
-
-    .feature-card strong {
-      display: block;
-      color: var(--cyan);
-      margin-bottom: 5px;
-      font-family: var(--font-mono);
-    }
-
     .launch-btn {
-      background: transparent;
+      background: rgba(0, 240, 255, 0.1);
       color: var(--cyan);
       border: 2px solid var(--cyan);
-      padding: 16px 36px;
+      padding: 16px 32px;
       font-size: 16px;
       font-weight: bold;
       font-family: var(--font-mono);
       letter-spacing: 2px;
       border-radius: 8px;
       cursor: pointer;
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
     }
 
     .launch-btn:hover {
       background: var(--cyan);
       color: #000;
-      box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
-      transform: translateY(-2px);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.8);
     }
 
-    /* =========================================================================
-       2. HUD VIEWPORT & TELEMETRY STYLES
-       ========================================================================= */
+    /* HUD Screen */
     #hud-screen {
       display: none;
       width: 100vw;
       height: 100vh;
       padding: 20px;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 300px;
       gap: 20px;
-      align-items: center;
     }
 
     .viewport-container {
       position: relative;
       width: 100%;
       height: 100%;
-      max-height: 720px;
       background: #000;
       border-radius: 12px;
-      border: 1px solid rgba(0, 240, 255, 0.4);
-      box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--cyan);
       overflow: hidden;
     }
 
     video { display: none; }
+    canvas { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-    canvas {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1);
-    }
-
-    /* Overlay HUD Bar */
-    .hud-header {
-      position: absolute;
-      top: 15px;
-      left: 20px;
-      right: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--cyan);
-      background: rgba(6, 9, 14, 0.7);
-      padding: 6px 12px;
-      border-radius: 20px;
-      border: 1px solid rgba(0, 240, 255, 0.3);
-    }
-
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      background-color: var(--cyan);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--cyan);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 0.2; }
-      50% { opacity: 1; }
-      100% { opacity: 0.2; }
-    }
-
-    /* Telemetry Sidebar */
     .telemetry-sidebar {
       background: var(--card-bg);
       border: 1px solid rgba(0, 240, 255, 0.3);
       border-radius: 12px;
       padding: 20px;
-      height: 100%;
-      max-height: 720px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      backdrop-filter: blur(10px);
-    }
-
-    .sidebar-title {
       font-family: var(--font-mono);
-      color: var(--cyan);
-      font-size: 14px;
-      letter-spacing: 2px;
-      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
-      padding-bottom: 10px;
-      margin-bottom: 20px;
     }
 
-    .joint-metric {
-      margin-bottom: 15px;
-    }
-
-    .joint-label {
-      display: flex;
-      justify-content: space-between;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: #8b949e;
-      margin-bottom: 5px;
-    }
-
-    .joint-label span.val {
-      color: var(--cyan);
-      font-weight: bold;
-    }
-
-    .progress-bar-bg {
-      width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 4px;
-      overflow: hidden;
-      border: 1px solid rgba(0, 240, 255, 0.1);
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, var(--cyan), var(--magenta));
-      transition: width 0.1s linear;
-    }
-
-    /* Voice Terminal Box */
-    .voice-box {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 12px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-    }
-
-    .voice-status {
-      color: var(--magenta);
-      margin-bottom: 5px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .transcript-text {
-      color: #c9d1d9;
-      min-height: 36px;
-      word-break: break-word;
-    }
+    .joint-metric { margin-bottom: 15px; }
+    .joint-label { display: flex; justify-content: space-between; font-size: 12px; color: #8b949e; margin-bottom: 4px; }
+    .joint-label span { color: var(--cyan); font-weight: bold; }
+    .bar-bg { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; width: 100%; background: var(--cyan); transition: width 0.1s; }
   </style>
 </head>
 <body>
 
-  <!-- =========================================================================
-       LANDING HOME PAGE
-       ========================================================================= -->
+  <!-- LANDING PAGE -->
   <div id="home-screen">
-    <div class="title-tag">Project ANIMUS v2 • Interface</div>
-    <h1>Multimodal Cybernetic Control System</h1>
-    <p class="subtitle">
-      Real-time computer vision, 5-axis kinematic joint telemetry, and WebSocket voice control bridge for external hardware robotics.
-    </p>
-
-    <div class="feature-grid">
-      <div class="feature-card">
-        <strong>VISION ENGINE</strong>
-        MediaPipe Single-Hand Tracking with low-latency GPU acceleration.
-      </div>
-      <div class="feature-card">
-        <strong>VOICE CONTROL</strong>
-        Browser Web Speech API engine with active wake-word processing.
-      </div>
-      <div class="feature-card">
-        <strong>KINEMATICS</strong>
-        Dynamic 5-finger angular mapping for robotic servo translation.
-      </div>
-    </div>
-
-    <button class="launch-btn" onclick="launchHUD()">CONNECT ROBOTIC HAND & LAUNCH HUD</button>
+    <div style="font-family: var(--font-mono); color: var(--cyan); font-size: 12px; letter-spacing: 3px; margin-bottom: 10px;">PROJECT ANIMUS v2</div>
+    <h1>Multimodal HUD Interface</h1>
+    <p class="subtitle">Real-time hand tracking, servo kinematic telemetry, and voice assistant bridge.</p>
+    <button class="launch-btn" id="start-btn">CONNECT ROBOTIC HAND & LAUNCH HUD</button>
   </div>
 
-  <!-- =========================================================================
-       LIVE HUD & TELEMETRY DASHBOARD
-       ========================================================================= -->
+  <!-- HUD DASHBOARD -->
   <div id="hud-screen">
     <div class="viewport-container">
-      <div class="hud-header">
-        <div class="status-badge">
-          <div class="pulse-dot"></div>
-          ANIMUS VISION STREAMING
-        </div>
-        <div class="status-badge" id="ws-status">
-          WS: DISCONNECTED
-        </div>
-      </div>
-
       <video id="webcam" playsinline></video>
       <canvas id="output_canvas" width="1280" height="720"></canvas>
     </div>
 
-    <!-- Telemetry Sidebar -->
     <div class="telemetry-sidebar">
       <div>
-        <div class="sidebar-title">SERVO KINEMATICS</div>
-
-        <!-- Thumb -->
+        <div style="color: var(--cyan); border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 8px; margin-bottom: 20px; font-size: 14px;">SERVO TELEMETRY</div>
+        
         <div class="joint-metric">
-          <div class="joint-label">THUMB JOINT <span class="val" id="val-thumb">180°</span></div>
-          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-thumb" style="width: 100%;"></div></div>
+          <div class="joint-label">THUMB <span id="val-thumb">180°</span></div>
+          <div class="bar-bg"><div class="bar-fill" id="bar-thumb"></div></div>
         </div>
-
-        <!-- Index -->
         <div class="joint-metric">
-          <div class="joint-label">INDEX FINGER <span class="val" id="val-index">180°</span></div>
-          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-index" style="width: 100%;"></div></div>
+          <div class="joint-label">INDEX <span id="val-index">180°</span></div>
+          <div class="bar-bg"><div class="bar-fill" id="bar-index"></div></div>
         </div>
-
-        <!-- Middle -->
         <div class="joint-metric">
-          <div class="joint-label">MIDDLE FINGER <span class="val" id="val-middle">180°</span></div>
-          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-middle" style="width: 100%;"></div></div>
+          <div class="joint-label">MIDDLE <span id="val-middle">180°</span></div>
+          <div class="bar-bg"><div class="bar-fill" id="bar-middle"></div></div>
         </div>
-
-        <!-- Ring -->
         <div class="joint-metric">
-          <div class="joint-label">RING FINGER <span class="
+          <div class="joint-label">RING <span id="val-ring">180°</span></div>
+          <div class="bar-bg"><div class="bar-fill" id="bar-ring"></div></div>
+        </div>
+        <div class="joint-metric">
+          <div class="joint-label">PINKY <span id="val-pinky">180°</span></div>
+          <div class="bar-bg"><div class="bar-fill" id="bar-pinky"></div></div>
+        </div>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; font-size: 11px;">
+        <div style="color: var(--magenta);">VOICE ENGINE</div>
+        <div id="transcript" style="color: #c9d1d9; margin-top: 4px;">Say "Jarvis"...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('start-btn').addEventListener('click', async () => {
+      console.log('Launch button clicked!');
+      
+      // 1. Hide Landing Page & Show HUD
+      document.getElementById('home-screen').style.display = 'none';
+      document.getElementById('hud-screen').style.display = 'grid';
+
+      // 2. Request Camera Permissions
+      const videoElement = document.getElementById('webcam');
+      const canvasElement = document.getElementById('output_canvas');
+      const canvasCtx = canvasElement.getContext('2d');
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+        videoElement.srcObject = stream;
+        await videoElement.play();
+        console.log('Webcam feed started successfully!');
+      } catch (err) {
+        alert('Camera access denied or unavailable: ' + err.message);
+        return;
+      }
+
+      // 3. Initialize MediaPipe Hands
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 0,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      hands.onResults((results) => {
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+          const landmarks = results.multiHandLandmarks[0];
+          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00f0ff', lineWidth: 3 });
+          drawLandmarks(canvasCtx, landmarks, { color: '#ff0055', fillColor: '#ffffff', radius: 4 });
+
+          // Simple Finger Extension Calculation
+          const wrist = landmarks[0];
+          const tips = [4, 8, 12, 16, 20];
+          const names = ['thumb', 'index', 'middle', 'ring', 'pinky'];
+
+          tips.forEach((tipIdx, i) => {
+            const tip = landmarks[tipIdx];
+            const dist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+            let angle = Math.round(Math.min(180, Math.max(0, (dist / 0.5) * 180)));
+            document.getElementById(`val-${names[i]}`).innerText = `${angle}°`;
+            document.getElementById(`bar-${names[i]}`).style.width = `${(angle / 180) * 100}%`;
+          });
+        }
+        canvasCtx.restore();
+      });
+
+      // 4. Send Frames to MediaPipe
+      async function processFrame() {
+        if (!videoElement.paused && !videoElement.ended) {
+          await hands.send({ image: videoElement });
+        }
+        requestAnimationFrame(processFrame);
+      }
+      processFrame();
+
+      // 5. Speech Recognition
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (event) => {
+          let text = event.results[event.results.length - 1][0].transcript;
+          document.getElementById('transcript').innerText = `"${text}"`;
+        };
+        recognition.start();
+      }
+    });
+  </script>
+</body>
+</html>
