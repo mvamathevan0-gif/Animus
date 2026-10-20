@@ -16,6 +16,7 @@
       --primary-blue: #4285F4;
       --accent-red: #FF3344;
       --card-base: #121214;
+      --card-border: rgba(66, 133, 244, 0.25);
       --text-white: #F3F4F6;
       --text-dim: #9CA3AF;
       --font-mono: 'Courier New', Courier, monospace;
@@ -26,9 +27,9 @@
     body {
       background-color: var(--bg-black);
       background-image: 
-        radial-gradient(circle at 50% 50%, rgba(66, 133, 244, 0.05) 0%, transparent 80%),
-        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        radial-gradient(circle at 50% 50%, rgba(66, 133, 244, 0.04) 0%, transparent 80%),
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
       background-size: 100% 100%, 30px 30px, 30px 30px;
       color: var(--text-white);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -44,27 +45,26 @@
        ========================================================================= */
     #home-screen {
       text-align: center;
-      max-width: 750px;
+      max-width: 720px;
       padding: 45px;
       background: var(--card-base);
-      border: 1px solid rgba(66, 133, 244, 0.3);
-      border-radius: 16px;
-      box-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(66, 133, 244, 0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(66, 133, 244, 0.15);
       z-index: 10;
-      transition: all 0.4s ease;
     }
 
     .title-tag {
       font-family: var(--font-mono);
       color: var(--accent-red);
-      font-size: 13px;
+      font-size: 12px;
       letter-spacing: 4px;
       margin-bottom: 12px;
       text-transform: uppercase;
     }
 
     h1 {
-      font-size: 40px;
+      font-size: 36px;
       font-weight: 800;
       letter-spacing: 1px;
       color: var(--text-white);
@@ -73,7 +73,7 @@
 
     p.subtitle {
       color: var(--text-dim);
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.6;
       margin-bottom: 35px;
     }
@@ -81,13 +81,13 @@
     .launch-btn {
       background: rgba(66, 133, 244, 0.1);
       color: var(--primary-blue);
-      border: 2px solid var(--primary-blue);
-      padding: 16px 36px;
-      font-size: 15px;
+      border: 1px solid var(--primary-blue);
+      padding: 14px 32px;
+      font-size: 14px;
       font-weight: bold;
       font-family: var(--font-mono);
       letter-spacing: 2px;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
       box-shadow: 0 0 15px rgba(66, 133, 244, 0.2);
       transition: all 0.3s ease;
@@ -96,66 +96,60 @@
     .launch-btn:hover {
       background: var(--primary-blue);
       color: #ffffff;
-      box-shadow: 0 0 30px rgba(66, 133, 244, 0.6);
-      transform: translateY(-2px);
+      box-shadow: 0 0 25px rgba(66, 133, 244, 0.5);
     }
 
     /* =========================================================================
-       2. HUD SCREEN & VIEWPORT
+       2. PROFESSIONAL DASHBOARD & SPLIT-SCREEN LAYOUT
        ========================================================================= */
     #hud-screen {
       display: none;
       width: 100vw;
       height: 100vh;
+      flex-direction: column;
       position: relative;
     }
 
-    .viewport-container {
-      width: 100%;
-      height: 100%;
-      background: #000;
-      position: relative;
-    }
-
-    video { display: none; }
-    canvas {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1);
-    }
-
-    /* HUD Header Overlays */
-    .hud-header {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
+    /* Navigation Header */
+    .top-navbar {
+      height: 60px;
+      padding: 0 25px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: rgba(18, 18, 20, 0.95);
+      border-bottom: 1px solid var(--card-border);
+      backdrop-filter: blur(10px);
       z-index: 20;
-      pointer-events: none;
+    }
+
+    .brand-title {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .status-badge {
-      pointer-events: auto;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--primary-blue);
-      background: rgba(18, 18, 20, 0.85);
-      padding: 8px 16px;
-      border-radius: 20px;
-      border: 1px solid rgba(66, 133, 244, 0.4);
-      backdrop-filter: blur(8px);
+      background: rgba(5, 5, 5, 0.6);
+      padding: 4px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(66, 133, 244, 0.3);
     }
 
     .pulse-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       background-color: var(--accent-red);
       border-radius: 50%;
       box-shadow: 0 0 8px var(--accent-red);
@@ -168,70 +162,77 @@
       100% { opacity: 0.3; }
     }
 
-    .toggle-drawer-btn {
-      pointer-events: auto;
-      background: rgba(18, 18, 20, 0.85);
+    .hamburger-btn {
+      background: transparent;
       color: var(--primary-blue);
-      border: 1px solid var(--primary-blue);
-      padding: 8px 18px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      width: 38px;
+      height: 38px;
+      border-radius: 6px;
+      font-size: 18px;
       cursor: pointer;
-      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
       transition: all 0.2s ease;
     }
 
-    .toggle-drawer-btn:hover {
-      background: var(--primary-blue);
-      color: #ffffff;
-      box-shadow: 0 0 15px rgba(66, 133, 244, 0.5);
+    .hamburger-btn:hover {
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 10px rgba(66, 133, 244, 0.3);
     }
 
-    /* =========================================================================
-       3. SLIDE-OUT TELEMETRY DRAWER
-       ========================================================================= */
-    .telemetry-drawer {
-      position: absolute;
-      top: 0;
-      right: -360px;
-      width: 340px;
+    /* Main Workspace Split */
+    .dashboard-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    /* Contained Camera Window */
+    .camera-card {
+      background: var(--card-base);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    video { display: none; }
+    canvas {
+      width: 100%;
       height: 100%;
-      background: rgba(18, 18, 20, 0.95);
-      border-left: 1px solid rgba(66, 133, 244, 0.4);
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
-      z-index: 30;
-      padding: 30px 20px;
+      object-fit: contain;
+      transform: scaleX(-1);
+    }
+
+    /* Direct Telemetry Card */
+    .telemetry-card {
+      background: var(--card-base);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      backdrop-filter: blur(12px);
-      transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
-    .telemetry-drawer.open {
-      right: 0;
-    }
-
-    .drawer-title {
+    .card-header-title {
       font-family: var(--font-mono);
+      font-size: 13px;
       color: var(--primary-blue);
-      font-size: 14px;
       letter-spacing: 2px;
-      border-bottom: 1px solid rgba(66, 133, 244, 0.2);
-      padding-bottom: 12px;
-      margin-bottom: 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .close-drawer-btn {
-      background: none;
-      border: none;
-      color: var(--accent-red);
-      font-size: 18px;
-      cursor: pointer;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
     }
 
     .joint-metric { margin-bottom: 18px; }
@@ -247,9 +248,9 @@
 
     .bar-bg {
       width: 100%;
-      height: 8px;
+      height: 6px;
       background: rgba(255, 255, 255, 0.05);
-      border-radius: 4px;
+      border-radius: 3px;
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
@@ -261,24 +262,49 @@
     }
 
     /* =========================================================================
+       3. SLIDE-OUT DRAWER (CONTROLLED BY ☰ ICON)
+       ========================================================================= */
+    .side-drawer {
+      position: absolute;
+      top: 60px;
+      right: -360px;
+      width: 340px;
+      height: calc(100vh - 60px);
+      background: rgba(18, 18, 20, 0.98);
+      border-left: 1px solid var(--card-border);
+      z-index: 30;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+    }
+
+    .side-drawer.open {
+      right: 0;
+    }
+
+    /* =========================================================================
        4. EXPANDABLE VOICE OVERLAY MODAL
        ========================================================================= */
     .voice-modal {
       position: absolute;
-      bottom: 40px;
+      bottom: 30px;
       left: 50%;
-      transform: translateX(-50%) scale(0.8);
-      width: 380px;
+      transform: translateX(-50%) scale(0.85);
+      width: 360px;
       background: rgba(18, 18, 20, 0.95);
       border: 1px solid var(--accent-red);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 30px rgba(255, 51, 68, 0.3);
+      border-radius: 8px;
+      padding: 16px 20px;
+      box-shadow: 0 0 25px rgba(255, 51, 68, 0.25);
       backdrop-filter: blur(10px);
       z-index: 50;
       opacity: 0;
       pointer-events: none;
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .voice-modal.active {
@@ -292,20 +318,20 @@
       align-items: center;
       gap: 10px;
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 12px;
       color: var(--accent-red);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .voice-wave {
       display: flex;
       align-items: center;
       gap: 3px;
-      height: 16px;
+      height: 14px;
     }
 
     .wave-bar {
-      width: 3px;
+      width: 2px;
       height: 100%;
       background: var(--accent-red);
       animation: wave 1s infinite ease-in-out;
@@ -315,25 +341,25 @@
     .wave-bar:nth-child(3) { animation-delay: 0.4s; }
 
     @keyframes wave {
-      0%, 100% { height: 4px; }
-      50% { height: 16px; }
+      0%, 100% { height: 3px; }
+      50% { height: 14px; }
     }
 
     .voice-transcript {
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-white);
-      min-height: 40px;
+      min-height: 24px;
       word-break: break-word;
     }
 
     .voice-reply {
-      margin-top: 10px;
+      margin-top: 8px;
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--primary-blue);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 6px;
     }
   </style>
 </head>
@@ -351,51 +377,70 @@
 
   <!-- HUD DASHBOARD -->
   <div id="hud-screen">
-    <div class="viewport-container">
-      <div class="hud-header">
+    <header class="top-navbar">
+      <div class="brand-title">
+        <span>PROJECT ANIMUS v2</span>
         <div class="status-badge">
           <div class="pulse-dot"></div>
-          ANIMUS CORE ACTIVE
+          CORE ACTIVE
         </div>
-        <button class="toggle-drawer-btn" onclick="toggleDrawer()">TELEMETRY SIDEBAR ☰</button>
+      </div>
+      <button class="hamburger-btn" onclick="toggleDrawer()" title="Toggle Telemetry Sidebar">☰</button>
+    </header>
+
+    <main class="dashboard-body">
+      <!-- Contained Camera Viewport -->
+      <div class="camera-card">
+        <video id="webcam" playsinline></video>
+        <canvas id="output_canvas" width="1280" height="720"></canvas>
       </div>
 
-      <video id="webcam" playsinline></video>
-      <canvas id="output_canvas" width="1280" height="720"></canvas>
-    </div>
+      <!-- Telemetry Card Panel -->
+      <div class="telemetry-card">
+        <div>
+          <div class="card-header-title">SERVO KINEMATICS</div>
 
-    <!-- SLIDE-OUT TELEMETRY DRAWER -->
-    <div class="telemetry-drawer" id="telemetry-drawer">
+          <div class="joint-metric">
+            <div class="joint-label">THUMB JOINT <span class="val" id="val-thumb">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-thumb"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">INDEX FINGER <span class="val" id="val-index">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-index"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">MIDDLE FINGER <span class="val" id="val-middle">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-middle"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-ring"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-pinky"></div></div>
+          </div>
+        </div>
+
+        <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-align: center;">
+          5-AXIS KINEMATIC TRANSLATION
+        </div>
+      </div>
+    </main>
+
+    <!-- SLIDE-OUT DRAWER FOR ADDITIONAL DATA -->
+    <div class="side-drawer" id="side-drawer">
       <div>
-        <div class="drawer-title">
-          <span>SERVO KINEMATICS</span>
-          <button class="close-drawer-btn" onclick="toggleDrawer()">✕</button>
-        </div>
-
-        <div class="joint-metric">
-          <div class="joint-label">THUMB JOINT <span class="val" id="val-thumb">180°</span></div>
-          <div class="bar-bg"><div class="bar-fill" id="bar-thumb"></div></div>
-        </div>
-        <div class="joint-metric">
-          <div class="joint-label">INDEX FINGER <span class="val" id="val-index">180°</span></div>
-          <div class="bar-bg"><div class="bar-fill" id="bar-index"></div></div>
-        </div>
-        <div class="joint-metric">
-          <div class="joint-label">MIDDLE FINGER <span class="val" id="val-middle">180°</span></div>
-          <div class="bar-bg"><div class="bar-fill" id="bar-middle"></div></div>
-        </div>
-        <div class="joint-metric">
-          <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
-          <div class="bar-bg"><div class="bar-fill" id="bar-ring"></div></div>
-        </div>
-        <div class="joint-metric">
-          <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
-          <div class="bar-bg"><div class="bar-fill" id="bar-pinky"></div></div>
+        <div class="card-header-title">SYSTEM DIAGNOSTICS</div>
+        <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); line-height: 1.8;">
+          • MediaPipe GPU Pipeline: Active<br>
+          • Target Frame Rate: 60 FPS<br>
+          • WebSpeech Engine: Listening<br>
+          • Serial Port Interface: Ready
         </div>
       </div>
-
       <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-align: center;">
-        PROJECT ANIMUS v2 • KINEMATIC ENGINE
+        ANIMUS HUD v2.4
       </div>
     </div>
 
@@ -415,15 +460,13 @@
   </div>
 
   <script>
-    // Slide-out Drawer Toggle
     function toggleDrawer() {
-      document.getElementById('telemetry-drawer').classList.toggle('open');
+      document.getElementById('side-drawer').classList.toggle('open');
     }
 
-    // Main Engine Setup
     document.getElementById('start-btn').addEventListener('click', async () => {
       document.getElementById('home-screen').style.display = 'none';
-      document.getElementById('hud-screen').style.display = 'block';
+      document.getElementById('hud-screen').style.display = 'flex';
 
       const videoElement = document.getElementById('webcam');
       const canvasElement = document.getElementById('output_canvas');
@@ -432,126 +475,4 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
         videoElement.srcObject = stream;
-        await videoElement.play();
-      } catch (err) {
-        alert('Camera access denied or unavailable: ' + err.message);
-        return;
-      }
-
-      // Initialize MediaPipe Hands
-      const hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-      });
-
-      hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 0,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-      });
-
-      hands.onResults((results) => {
-        canvasCtx.save();
-        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-
-        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-          const landmarks = results.multiHandLandmarks[0];
-          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#4285F4', lineWidth: 3 });
-          drawLandmarks(canvasCtx, landmarks, { color: '#FF3344', fillColor: '#FFFFFF', radius: 4 });
-
-          const wrist = landmarks[0];
-          const tips = [4, 8, 12, 16, 20];
-          const names = ['thumb', 'index', 'middle', 'ring', 'pinky'];
-
-          tips.forEach((tipIdx, i) => {
-            const tip = landmarks[tipIdx];
-            const dist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
-            let angle = Math.round(Math.min(180, Math.max(0, (dist / 0.5) * 180)));
-            document.getElementById(`val-${names[i]}`).innerText = `${angle}°`;
-            document.getElementById(`bar-${names[i]}`).style.width = `${(angle / 180) * 100}%`;
-          });
-        }
-        canvasCtx.restore();
-      });
-
-      async function processFrame() {
-        if (!videoElement.paused && !videoElement.ended) {
-          await hands.send({ image: videoElement });
-        }
-        requestAnimationFrame(processFrame);
-      }
-      processFrame();
-
-      // =========================================================================
-      // VOICE ENGINE & TEXT-TO-SPEECH (TTS) RESPONSE
-      // =========================================================================
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        const modal = document.getElementById('voice-modal');
-        const transcriptEl = document.getElementById('modal-transcript');
-        const replyEl = document.getElementById('modal-reply');
-        
-        let isProcessing = false;
-
-        function speakResponse(text) {
-          replyEl.style.display = 'block';
-          replyEl.innerText = `Jarvis: "${text}"`;
-
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
-
-          utterance.onend = () => {
-            setTimeout(() => {
-              modal.classList.remove('active');
-              replyEl.style.display = 'none';
-              isProcessing = false;
-            }, 2500);
-          };
-
-          window.speechSynthesis.speak(utterance);
-        }
-
-        function generateAIAnswer(query) {
-          const q = query.toLowerCase();
-          if (q.includes('status') || q.includes('system')) {
-            return "All telemetry channels are operational. Kinematic servo sync active.";
-          } else if (q.includes('who are you') || q.includes('your name')) {
-            return "I am ANIMUS, a cybernetic vision and robotic control assistant.";
-          } else if (q.includes('hand') || q.includes('servo')) {
-            return "Robotic hand joint angles are tracking smoothly across all five axes.";
-          } else {
-            return `Processing request for: ${query}. Command executed successfully.`;
-          }
-        }
-
-        recognition.onresult = (event) => {
-          if (isProcessing) return;
-
-          let text = event.results[event.results.length - 1][0].transcript.trim();
-
-          if (text.toLowerCase().includes('jarvis')) {
-            modal.classList.add('active');
-            transcriptEl.innerText = `"${text}"`;
-
-            // If user asked a question after saying Jarvis
-            const cleanQuery = text.toLowerCase().replace('jarvis', '').trim();
-            if (cleanQuery.length > 2) {
-              isProcessing = true;
-              const reply = generateAIAnswer(cleanQuery);
-              speakResponse(reply);
-            }
-          }
-        };
-
-        recognition.start();
-      }
-    });
-  </script>
-</body>
-</html>
+        await videoElement.play
