@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PROJECT ANIMUS — Cybernetic Vision & Voice HUD</title>
-  <link rel="icon" href="data:,"> <!-- Fixes harmless favicon console warning -->
+  <link rel="icon" href="data:,">
 
   <!-- MediaPipe Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -35,7 +35,6 @@
       color: var(--text-white);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       height: 100vh;
-      width: 100vw;
       overflow: hidden;
       display: flex;
       justify-content: center;
@@ -99,7 +98,7 @@
       box-shadow: 0 0 25px rgba(66, 133, 244, 0.5);
     }
 
-    /* Main Canvas Layout matching Canva Mockup */
+    /* HUD Dashboard Layout */
     #hud-screen {
       display: none;
       width: 100vw;
@@ -161,7 +160,7 @@
       100% { opacity: 0.3; }
     }
 
-    /* 2-Column Split matching mockup */
+    /* 2-Column Split Grid */
     .mockup-grid {
       flex: 1;
       display: grid;
@@ -193,7 +192,7 @@
       transform: scaleX(-1);
     }
 
-    /* Right Frame: Stacked Telemetry & Voice Cards */
+    /* Right Stack */
     .right-stack {
       display: flex;
       flex-direction: column;
@@ -252,13 +251,13 @@
       transition: width 0.1s linear;
     }
 
-    /* Bottom Box: Voice & Expandable Assistant */
+    /* Bottom Box: Voice Assistant & Type Bar */
     .voice-card {
       flex: 1;
       background: var(--card-base);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 24px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -268,7 +267,7 @@
 
     .voice-card.active-listen {
       border-color: var(--accent-red);
-      box-shadow: 0 0 30px rgba(255, 51, 68, 0.2);
+      box-shadow: 0 0 30px rgba(255, 51, 68, 0.25);
     }
 
     .voice-header {
@@ -278,7 +277,7 @@
       font-family: var(--font-mono);
       font-size: 13px;
       color: var(--accent-red);
-      margin-bottom: 15px;
+      margin-bottom: 12px;
     }
 
     .voice-wave {
@@ -305,20 +304,64 @@
 
     .transcript-box {
       font-family: var(--font-mono);
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-white);
-      line-height: 1.6;
-      min-height: 80px;
+      line-height: 1.5;
+      min-height: 60px;
       word-break: break-word;
     }
 
     .reply-box {
-      margin-top: 15px;
+      margin-top: 10px;
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 12px;
       color: var(--primary-blue);
       border-top: 1px solid var(--card-border);
+      padding-top: 10px;
+    }
+
+    /* Type Bar Styles */
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 15px;
+      border-top: 1px solid var(--card-border);
       padding-top: 12px;
+    }
+
+    .input-row input {
+      flex: 1;
+      background: rgba(5, 5, 5, 0.8);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text-white);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-row input:focus {
+      border-color: var(--primary-blue);
+    }
+
+    .input-row button {
+      background: rgba(66, 133, 244, 0.15);
+      color: var(--primary-blue);
+      border: 1px solid var(--primary-blue);
+      padding: 8px 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .input-row button:hover {
+      background: var(--primary-blue);
+      color: #fff;
     }
   </style>
 </head>
@@ -345,7 +388,7 @@
         </div>
       </div>
       <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">
-        WAKE WORD: <span style="color: var(--accent-red);">"JARVIS"</span>
+        WAKE WORD: <span style="color: var(--accent-red);">"ANIMUS"</span>
       </div>
     </header>
 
@@ -384,7 +427,7 @@
           </div>
         </div>
 
-        <!-- Bottom Box: Voice Assistant (Expands on Wake Word) -->
+        <!-- Bottom Box: Voice Assistant & Type Bar -->
         <div class="voice-card" id="voice-card">
           <div>
             <div class="voice-header">
@@ -393,14 +436,19 @@
                 <div class="wave-bar"></div>
                 <div class="wave-bar"></div>
               </div>
-              <span id="voice-status-title">VOICE ENGINE: LISTENING...</span>
+              <span id="voice-status-title">ANIMUS ENGINE: STANDBY (Say "ANIMUS")</span>
             </div>
             <div class="transcript-box" id="transcript-display">
-              Original layout active. Say "Jarvis" to trigger voice commands...
+              Awaiting voice command or typed input...
             </div>
+            <div class="reply-box" id="reply-display" style="display: none;"></div>
           </div>
 
-          <div class="reply-box" id="reply-display" style="display: none;"></div>
+          <!-- Type Bar -->
+          <div class="input-row">
+            <input type="text" id="command-input" placeholder="Type query or command (e.g. calibrate, reset)..." />
+            <button id="send-btn">SEND</button>
+          </div>
         </div>
       </div>
     </main>
@@ -417,6 +465,11 @@
         const canvasElement = document.getElementById('output_canvas');
         const canvasCtx = canvasElement.getContext('2d');
 
+        if (typeof Hands === 'undefined') {
+          alert('MediaPipe failed to load from CDN. Please refresh.');
+          return;
+        }
+
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { width: { ideal: 1280 }, height: { ideal: 720 } } 
@@ -424,7 +477,7 @@
           videoElement.srcObject = stream;
           await videoElement.play();
         } catch (err) {
-          alert('Camera access denied or device unavailable: ' + err.message);
+          alert('Camera permission denied or camera missing: ' + err.message);
           return;
         }
 
@@ -472,79 +525,126 @@
         }
         processFrame();
 
-        // Speech Engine
+        // Assistant Logic (Voice & Text)
+        const anglesCard = document.getElementById('angles-card');
+        const voiceCard = document.getElementById('voice-card');
+        const transcriptEl = document.getElementById('transcript-display');
+        const replyEl = document.getElementById('reply-display');
+        const statusTitle = document.getElementById('voice-status-title');
+        const commandInput = document.getElementById('command-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        let interactionCount = 0;
+        let isProcessing = false;
+
+        function processCommandQuery(rawText) {
+          const q = rawText.toLowerCase().trim();
+          
+          // Action commands
+          if (q.includes('calibrate') || q.includes('calibration')) {
+            return "Entering sensor calibration mode. Please hold hand steady.";
+          } else if (q.includes('reset')) {
+            return "Telemetry baselines reset to zero.";
+          } else if (q.includes('stop') || q.includes('emergency')) {
+            return "Emergency stop executed. All hardware outputs halted.";
+          } else if (q.includes('status') || q.includes('system')) {
+            return "All telemetry channels operational. Kinematic servo sync active.";
+          } else if (q.includes('who are you') || q.includes('name')) {
+            return "I am ANIMUS, your cybernetic voice and vision assistant.";
+          } else if (q.includes('hand') || q.includes('finger')) {
+            return "Tracking all five fingers in real time. Servo translation running smoothly.";
+          } else {
+            return `Command processed successfully for: "${rawText}".`;
+          }
+        }
+
+        function executeAssistantResponse(queryText) {
+          if (isProcessing) return;
+          isProcessing = true;
+
+          interactionCount++;
+          voiceCard.classList.add('active-listen');
+          statusTitle.innerText = 'ANIMUS PROCESSING...';
+          transcriptEl.innerText = `"${queryText}"`;
+
+          // If multiple interactions occur, collapse angles card temporarily to emphasize assistant
+          if (interactionCount >= 2) {
+            anglesCard.classList.add('collapsed');
+          }
+
+          const replyText = processCommandQuery(queryText);
+          
+          replyEl.style.display = 'block';
+          replyEl.innerText = `ANIMUS: "${replyText}"`;
+
+          const utterance = new SpeechSynthesisUtterance(replyText);
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+
+          utterance.onend = () => {
+            setTimeout(() => {
+              anglesCard.classList.remove('collapsed');
+              voiceCard.classList.remove('active-listen');
+              statusTitle.innerText = 'ANIMUS ENGINE: STANDBY (Say "ANIMUS")';
+              transcriptEl.innerText = 'Awaiting voice command or typed input...';
+              replyEl.style.display = 'none';
+              isProcessing = false;
+            }, 3000);
+          };
+
+          window.speechSynthesis.speak(utterance);
+        }
+
+        // Text input event handlers
+        sendBtn.addEventListener('click', () => {
+          const val = commandInput.value.trim();
+          if (val) {
+            commandInput.value = '';
+            executeAssistantResponse(val);
+          }
+        });
+
+        commandInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            const val = commandInput.value.trim();
+            if (val) {
+              commandInput.value = '';
+              executeAssistantResponse(val);
+            }
+          }
+        });
+
+        // Speech Recognition Engine
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
           const recognition = new SpeechRecognition();
           recognition.continuous = true;
           recognition.interimResults = true;
 
-          const anglesCard = document.getElementById('angles-card');
-          const voiceCard = document.getElementById('voice-card');
-          const transcriptEl = document.getElementById('transcript-display');
-          const replyEl = document.getElementById('reply-display');
-          const statusTitle = document.getElementById('voice-status-title');
-
-          let questionCount = 0;
-          let isProcessing = false;
-
-          function speakResponse(text) {
-            replyEl.style.display = 'block';
-            replyEl.innerText = `Jarvis: "${text}"`;
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
-
-            utterance.onend = () => {
-              setTimeout(() => {
-                anglesCard.classList.remove('collapsed');
-                voiceCard.classList.remove('active-listen');
-                statusTitle.innerText = 'VOICE ENGINE: LISTENING...';
-                transcriptEl.innerText = 'Say "Jarvis" to trigger voice commands...';
-                replyEl.style.display = 'none';
-                isProcessing = false;
-              }, 3000);
-            };
-
-            window.speechSynthesis.speak(utterance);
-          }
-
-          function generateAIAnswer(query) {
-            const q = query.toLowerCase();
-            if (q.includes('status') || q.includes('system')) {
-              return "All telemetry channels operational. Kinematic servo sync active.";
-            } else if (q.includes('who are you') || q.includes('name')) {
-              return "I am ANIMUS, your cybernetic voice and vision assistant.";
-            } else if (q.includes('hand') || q.includes('finger')) {
-              return "Tracking all five fingers. Servo translation running smoothly.";
-            } else {
-              return `Command received for: "${query}". Task completed.`;
-            }
-          }
-
           recognition.onresult = (event) => {
             if (isProcessing) return;
 
             let text = event.results[event.results.length - 1][0].transcript.trim();
+            transcriptEl.innerText = `Hearing: "${text}"`;
 
-            if (text.toLowerCase().includes('jarvis')) {
-              questionCount++;
-              voiceCard.classList.add('active-listen');
-              statusTitle.innerText = 'JARVIS PROCESSING...';
-              transcriptEl.innerText = `"${text}"`;
-
-              if (questionCount >= 2) {
-                anglesCard.classList.add('collapsed');
-              }
-
-              const cleanQuery = text.toLowerCase().replace('jarvis', '').trim();
+            // Wake word trigger
+            if (text.toLowerCase().includes('animus')) {
+              const cleanQuery = text.toLowerCase().replace('animus', '').trim();
               if (cleanQuery.length > 2) {
-                isProcessing = true;
-                const reply = generateAIAnswer(cleanQuery);
-                speakResponse(reply);
+                executeAssistantResponse(cleanQuery);
+              } else {
+                statusTitle.innerText = 'ANIMUS LISTENING...';
+                voiceCard.classList.add('active-listen');
               }
             }
+          };
+
+          recognition.onerror = (err) => {
+            console.warn('Speech recognition warning:', err);
+          };
+
+          recognition.onend = () => {
+            try { recognition.start(); } catch(e) {}
           };
 
           recognition.start();
