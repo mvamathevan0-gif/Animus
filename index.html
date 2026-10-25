@@ -161,7 +161,7 @@
     }
 
     /* =========================================================================
-       COLLAPSIBLE TOP BLUETOOTH & HARDWARE SHELF
+       COLLAPSIBLE BLUETOOTH HARDWARE SHELF
        ========================================================================= */
     .hardware-shelf {
       position: absolute;
@@ -216,6 +216,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 15px;
+      align-items: center;
     }
 
     .shelf-section-title {
@@ -238,8 +239,29 @@
     }
     .motor-stat span { color: var(--text-white); }
 
+    .bt-connect-btn {
+      background: rgba(66, 133, 244, 0.15);
+      color: var(--primary-blue);
+      border: 1px solid var(--primary-blue);
+      padding: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      transition: all 0.2s;
+    }
+
+    .bt-connect-btn:hover {
+      background: var(--primary-blue);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(66, 133, 244, 0.4);
+    }
+
     /* =========================================================================
-       CINEMATIC HUD CORNER BRACKETS
+       CINEMATIC HUD CORNER BRACKETS & LAYOUT
        ========================================================================= */
     .mockup-grid {
       flex: 1;
@@ -255,7 +277,6 @@
       position: relative;
     }
 
-    /* Corner Bracket Generator */
     .video-frame::before, .angles-card::before, .voice-card::before,
     .video-frame::after, .angles-card::after, .voice-card::after {
       content: '';
@@ -276,7 +297,6 @@
       border-width: 0 2px 2px 0;
     }
 
-    /* Left Frame: Video Feed */
     .video-frame {
       background: var(--card-base);
       border: 1px solid var(--card-border);
@@ -296,7 +316,6 @@
       transform: scaleX(-1);
     }
 
-    /* Right Stack */
     .right-stack {
       display: flex;
       flex-direction: column;
@@ -305,7 +324,6 @@
       position: relative;
     }
 
-    /* Top Box: Finger Angles */
     .angles-card {
       background: var(--card-base);
       border: 1px solid var(--card-border);
@@ -315,9 +333,7 @@
       overflow: hidden;
     }
 
-    .angles-card.collapsed {
-      display: none;
-    }
+    .angles-card.collapsed { display: none; }
 
     .card-title {
       font-family: var(--font-mono);
@@ -355,7 +371,6 @@
       transition: width 0.1s linear;
     }
 
-    /* Bottom Box: Voice Assistant & Type Bar */
     .voice-card {
       flex: 1;
       background: var(--card-base);
@@ -365,7 +380,6 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
     }
 
@@ -424,7 +438,6 @@
       padding-top: 10px;
     }
 
-    /* Type Bar */
     .input-row {
       display: flex;
       gap: 8px;
@@ -443,7 +456,6 @@
       font-family: var(--font-mono);
       font-size: 12px;
       outline: none;
-      transition: border-color 0.2s;
     }
 
     .input-row input:focus { border-color: var(--primary-blue); }
@@ -458,12 +470,26 @@
       font-weight: bold;
       border-radius: 6px;
       cursor: pointer;
-      transition: all 0.2s;
     }
 
-    .input-row button:hover {
-      background: var(--primary-blue);
-      color: #fff;
+    /* =========================================================================
+       RESPONSIVE PHONE LAYOUT (AUTO-STACKS ON MOBILE SCREENS)
+       ========================================================================= */
+    @media (max-width: 768px) {
+      .mockup-grid {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+        height: calc(100vh - 60px);
+      }
+      .video-frame {
+        min-height: 280px;
+      }
+      .hardware-shelf {
+        width: 90vw;
+      }
+      .shelf-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -497,37 +523,36 @@
       </div>
     </header>
 
-    <!-- COLLAPSIBLE TOP BLUETOOTH & HARDWARE SHELF -->
+    <!-- COLLAPSIBLE BLUETOOTH HARDWARE SHELF -->
     <div class="shelf-toggle-tab" id="shelf-toggle">HARDWARE & BLUETOOTH ▾</div>
     <div class="hardware-shelf" id="hardware-shelf">
       <div class="shelf-grid">
         <div>
           <div class="shelf-section-title">BLUETOOTH LINK</div>
-          <div class="motor-stat">STATUS: <span style="color: #00FF66;">CONNECTED</span></div>
-          <div class="motor-stat">DEVICE: <span>ESP32_ANIMUS_V2</span></div>
-          <div class="motor-stat">SIGNAL (RSSI): <span>-54 dBm</span></div>
+          <div class="motor-stat">STATUS: <span id="bt-status" style="color: var(--accent-red);">WAITING FOR CONNECTION</span></div>
+          <div class="motor-stat">DEVICE: <span id="bt-device">NONE</span></div>
+          <button class="bt-connect-btn" id="bt-connect-btn">CONNECT TO ROBOT ARM</button>
         </div>
         <div>
           <div class="shelf-section-title">MOTOR CHARGE & POWER</div>
-          <div class="motor-stat">MOTOR 1 (THUMB): <span>4.1V [88%]</span></div>
-          <div class="motor-stat">MOTOR 2 (INDEX): <span>4.0V [84%]</span></div>
-          <div class="motor-stat">MOTOR 3 (MIDDLE): <span>4.2V [91%]</span></div>
-          <div class="motor-stat">MOTOR 4 (RING): <span>3.9V [79%]</span></div>
-          <div class="motor-stat">MOTOR 5 (PINKY): <span>4.1V [87%]</span></div>
+          <div class="motor-stat">MOTOR 1 (THUMB): <span id="m1-stat">--</span></div>
+          <div class="motor-stat">MOTOR 2 (INDEX): <span id="m2-stat">--</span></div>
+          <div class="motor-stat">MOTOR 3 (MIDDLE): <span id="m3-stat">--</span></div>
+          <div class="motor-stat">MOTOR 4 (RING): <span id="m4-stat">--</span></div>
+          <div class="motor-stat">MOTOR 5 (PINKY): <span id="m5-stat">--</span></div>
         </div>
       </div>
     </div>
 
     <main class="mockup-grid">
-      <!-- Left Box: Video Feed (MediaPipe) -->
+      <!-- Left Box: Video Feed -->
       <div class="video-frame">
         <video id="webcam" playsinline></video>
         <canvas id="output_canvas" width="1280" height="720"></canvas>
       </div>
 
-      <!-- Right Stack: Angles & Dynamic Voice Area -->
+      <!-- Right Stack -->
       <div class="right-stack">
-        <!-- Top Box: Angles of each separate finger -->
         <div class="angles-card" id="angles-card">
           <div class="card-title">ANGLES OF EACH SEPARATE FINGER</div>
 
@@ -545,7 +570,7 @@
           </div>
           <div class="joint-metric">
             <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-ring"></div></div>
+            <div class="bar-bg"><div class="bar-fill" id="val-ring"></div></div>
           </div>
           <div class="joint-metric">
             <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
@@ -553,7 +578,6 @@
           </div>
         </div>
 
-        <!-- Bottom Box: Voice Assistant & Type Bar -->
         <div class="voice-card" id="voice-card">
           <div>
             <div class="voice-header">
@@ -570,7 +594,6 @@
             <div class="reply-box" id="reply-display" style="display: none;"></div>
           </div>
 
-          <!-- Type Bar -->
           <div class="input-row">
             <input type="text" id="command-input" placeholder="Type query or command (e.g. calibrate, reset)..." />
             <button id="send-btn">SEND</button>
@@ -588,6 +611,40 @@
       shelfToggle.addEventListener('click', () => {
         hardwareShelf.classList.toggle('open');
         shelfToggle.innerText = hardwareShelf.classList.contains('open') ? 'HARDWARE & BLUETOOTH ▴' : 'HARDWARE & BLUETOOTH ▾';
+      });
+
+      // Bluetooth Connection Handler (Web Bluetooth API)
+      const btConnectBtn = document.getElementById('bt-connect-btn');
+      const btStatus = document.getElementById('bt-status');
+      const btDevice = document.getElementById('bt-device');
+
+      btConnectBtn.addEventListener('click', async () => {
+        try {
+          if (!navigator.bluetooth) {
+            alert('Web Bluetooth is not supported on this browser or device.');
+            return;
+          }
+          btStatus.innerText = 'PAIRING...';
+          const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: ['battery_service']
+          });
+          
+          btDevice.innerText = device.name || 'ANIMUS_ARM';
+          btStatus.innerText = 'CONNECTED';
+          btStatus.style.color = '#00FF66';
+          btConnectBtn.innerText = 'DISCONNECT';
+
+          // Update motor statuses once connected
+          document.getElementById('m1-stat').innerText = '4.1V [88%]';
+          document.getElementById('m2-stat').innerText = '4.0V [84%]';
+          document.getElementById('m3-stat').innerText = '4.2V [91%]';
+          document.getElementById('m4-stat').innerText = '3.9V [79%]';
+          document.getElementById('m5-stat').innerText = '4.1V [87%]';
+        } catch (err) {
+          console.warn('Bluetooth connection cancelled or failed:', err);
+          btStatus.innerText = 'CONNECTION FAILED';
+        }
       });
 
       const startBtn = document.getElementById('start-btn');
@@ -659,7 +716,7 @@
         }
         processFrame();
 
-        // Assistant Logic with Typewriter Effect
+        // Assistant Logic
         const anglesCard = document.getElementById('angles-card');
         const voiceCard = document.getElementById('voice-card');
         const transcriptEl = document.getElementById('transcript-display');
@@ -680,7 +737,7 @@
           } else if (q.includes('stop') || q.includes('emergency')) {
             return "Emergency stop executed. All hardware outputs halted.";
           } else if (q.includes('status') || q.includes('system')) {
-            return "All telemetry channels operational. Bluetooth link stable.";
+            return "All telemetry channels operational. Awaiting Bluetooth linkage.";
           } else if (q.includes('who are you') || q.includes('name')) {
             return "I am ANIMUS, your cybernetic voice and vision assistant.";
           } else if (q.includes('hand') || q.includes('finger')) {
@@ -722,7 +779,6 @@
           const replyText = processCommandQuery(queryText);
           replyEl.style.display = 'block';
 
-          // Typewriter text display + Speech Synthesis
           typeWriterEffect(replyText, replyEl, () => {
             const utterance = new SpeechSynthesisUtterance(replyText);
             utterance.rate = 1.0;
