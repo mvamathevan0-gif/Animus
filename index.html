@@ -118,7 +118,7 @@
       background: rgba(18, 18, 20, 0.95);
       border-bottom: 1px solid var(--card-border);
       backdrop-filter: blur(10px);
-      z-index: 20;
+      z-index: 25;
     }
 
     .brand-title {
@@ -160,7 +160,87 @@
       100% { opacity: 0.3; }
     }
 
-    /* 2-Column Split Grid */
+    /* =========================================================================
+       COLLAPSIBLE TOP BLUETOOTH & HARDWARE SHELF
+       ========================================================================= */
+    .hardware-shelf {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      background: rgba(18, 18, 20, 0.98);
+      border: 1px solid var(--card-border);
+      border-top: none;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.8);
+      z-index: 30;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding 0.4s ease;
+      padding: 0 25px;
+    }
+
+    .hardware-shelf.open {
+      max-height: 220px;
+      padding: 20px 25px;
+      border-color: var(--primary-blue);
+    }
+
+    .shelf-toggle-tab {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18, 18, 20, 0.95);
+      border: 1px solid var(--card-border);
+      border-top: none;
+      padding: 4px 18px;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--primary-blue);
+      cursor: pointer;
+      z-index: 35;
+      transition: all 0.2s ease;
+    }
+
+    .shelf-toggle-tab:hover {
+      background: var(--primary-blue);
+      color: #fff;
+    }
+
+    .shelf-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .shelf-section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent-red);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 4px;
+    }
+
+    .motor-stat {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .motor-stat span { color: var(--text-white); }
+
+    /* =========================================================================
+       CINEMATIC HUD CORNER BRACKETS
+       ========================================================================= */
     .mockup-grid {
       flex: 1;
       display: grid;
@@ -171,12 +251,36 @@
       overflow: hidden;
     }
 
+    .video-frame, .angles-card, .voice-card {
+      position: relative;
+    }
+
+    /* Corner Bracket Generator */
+    .video-frame::before, .angles-card::before, .voice-card::before,
+    .video-frame::after, .angles-card::after, .voice-card::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-color: var(--primary-blue);
+      border-style: solid;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .video-frame::before, .angles-card::before, .voice-card::before {
+      top: 6px; left: 6px;
+      border-width: 2px 0 0 2px;
+    }
+    .video-frame::after, .angles-card::after, .voice-card::after {
+      bottom: 6px; right: 6px;
+      border-width: 0 2px 2px 0;
+    }
+
     /* Left Frame: Video Feed */
     .video-frame {
       background: var(--card-base);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      position: relative;
       overflow: hidden;
       display: flex;
       justify-content: center;
@@ -320,7 +424,7 @@
       padding-top: 10px;
     }
 
-    /* Type Bar Styles */
+    /* Type Bar */
     .input-row {
       display: flex;
       gap: 8px;
@@ -342,9 +446,7 @@
       transition: border-color 0.2s;
     }
 
-    .input-row input:focus {
-      border-color: var(--primary-blue);
-    }
+    .input-row input:focus { border-color: var(--primary-blue); }
 
     .input-row button {
       background: rgba(66, 133, 244, 0.15);
@@ -387,10 +489,34 @@
           CORE ACTIVE
         </div>
       </div>
+      <div id="sys-ticker" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">
+        FPS: <span style="color: var(--primary-blue);">60.0</span> | LATENCY: <span style="color: var(--primary-blue);">12ms</span>
+      </div>
       <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">
         WAKE WORD: <span style="color: var(--accent-red);">"ANIMUS"</span>
       </div>
     </header>
+
+    <!-- COLLAPSIBLE TOP BLUETOOTH & HARDWARE SHELF -->
+    <div class="shelf-toggle-tab" id="shelf-toggle">HARDWARE & BLUETOOTH ▾</div>
+    <div class="hardware-shelf" id="hardware-shelf">
+      <div class="shelf-grid">
+        <div>
+          <div class="shelf-section-title">BLUETOOTH LINK</div>
+          <div class="motor-stat">STATUS: <span style="color: #00FF66;">CONNECTED</span></div>
+          <div class="motor-stat">DEVICE: <span>ESP32_ANIMUS_V2</span></div>
+          <div class="motor-stat">SIGNAL (RSSI): <span>-54 dBm</span></div>
+        </div>
+        <div>
+          <div class="shelf-section-title">MOTOR CHARGE & POWER</div>
+          <div class="motor-stat">MOTOR 1 (THUMB): <span>4.1V [88%]</span></div>
+          <div class="motor-stat">MOTOR 2 (INDEX): <span>4.0V [84%]</span></div>
+          <div class="motor-stat">MOTOR 3 (MIDDLE): <span>4.2V [91%]</span></div>
+          <div class="motor-stat">MOTOR 4 (RING): <span>3.9V [79%]</span></div>
+          <div class="motor-stat">MOTOR 5 (PINKY): <span>4.1V [87%]</span></div>
+        </div>
+      </div>
+    </div>
 
     <main class="mockup-grid">
       <!-- Left Box: Video Feed (MediaPipe) -->
@@ -456,6 +582,14 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Toggle Hardware Shelf
+      const shelfToggle = document.getElementById('shelf-toggle');
+      const hardwareShelf = document.getElementById('hardware-shelf');
+      shelfToggle.addEventListener('click', () => {
+        hardwareShelf.classList.toggle('open');
+        shelfToggle.innerText = hardwareShelf.classList.contains('open') ? 'HARDWARE & BLUETOOTH ▴' : 'HARDWARE & BLUETOOTH ▾';
+      });
+
       const startBtn = document.getElementById('start-btn');
       startBtn.addEventListener('click', async () => {
         document.getElementById('home-screen').style.display = 'none';
@@ -525,7 +659,7 @@
         }
         processFrame();
 
-        // Assistant Logic (Voice & Text)
+        // Assistant Logic with Typewriter Effect
         const anglesCard = document.getElementById('angles-card');
         const voiceCard = document.getElementById('voice-card');
         const transcriptEl = document.getElementById('transcript-display');
@@ -539,8 +673,6 @@
 
         function processCommandQuery(rawText) {
           const q = rawText.toLowerCase().trim();
-          
-          // Action commands
           if (q.includes('calibrate') || q.includes('calibration')) {
             return "Entering sensor calibration mode. Please hold hand steady.";
           } else if (q.includes('reset')) {
@@ -548,14 +680,30 @@
           } else if (q.includes('stop') || q.includes('emergency')) {
             return "Emergency stop executed. All hardware outputs halted.";
           } else if (q.includes('status') || q.includes('system')) {
-            return "All telemetry channels operational. Kinematic servo sync active.";
+            return "All telemetry channels operational. Bluetooth link stable.";
           } else if (q.includes('who are you') || q.includes('name')) {
             return "I am ANIMUS, your cybernetic voice and vision assistant.";
           } else if (q.includes('hand') || q.includes('finger')) {
-            return "Tracking all five fingers in real time. Servo translation running smoothly.";
+            return "Tracking all 5 fingers across all 5 motor axes smoothly.";
           } else {
             return `Command processed successfully for: "${rawText}".`;
           }
+        }
+
+        function typeWriterEffect(text, element, callback) {
+          element.innerHTML = 'ANIMUS: "';
+          let i = 0;
+          function type() {
+            if (i < text.length) {
+              element.innerHTML += text.charAt(i);
+              i++;
+              setTimeout(type, 25);
+            } else {
+              element.innerHTML += '"';
+              if (callback) callback();
+            }
+          }
+          type();
         }
 
         function executeAssistantResponse(queryText) {
@@ -567,54 +715,46 @@
           statusTitle.innerText = 'ANIMUS PROCESSING...';
           transcriptEl.innerText = `"${queryText}"`;
 
-          // If multiple interactions occur, collapse angles card temporarily to emphasize assistant
           if (interactionCount >= 2) {
             anglesCard.classList.add('collapsed');
           }
 
           const replyText = processCommandQuery(queryText);
-          
           replyEl.style.display = 'block';
-          replyEl.innerText = `ANIMUS: "${replyText}"`;
 
-          const utterance = new SpeechSynthesisUtterance(replyText);
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
+          // Typewriter text display + Speech Synthesis
+          typeWriterEffect(replyText, replyEl, () => {
+            const utterance = new SpeechSynthesisUtterance(replyText);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
 
-          utterance.onend = () => {
-            setTimeout(() => {
-              anglesCard.classList.remove('collapsed');
-              voiceCard.classList.remove('active-listen');
-              statusTitle.innerText = 'ANIMUS ENGINE: STANDBY (Say "ANIMUS")';
-              transcriptEl.innerText = 'Awaiting voice command or typed input...';
-              replyEl.style.display = 'none';
-              isProcessing = false;
-            }, 3000);
-          };
+            utterance.onend = () => {
+              setTimeout(() => {
+                anglesCard.classList.remove('collapsed');
+                voiceCard.classList.remove('active-listen');
+                statusTitle.innerText = 'ANIMUS ENGINE: STANDBY (Say "ANIMUS")';
+                transcriptEl.innerText = 'Awaiting voice command or typed input...';
+                replyEl.style.display = 'none';
+                isProcessing = false;
+              }, 2500);
+            };
 
-          window.speechSynthesis.speak(utterance);
+            window.speechSynthesis.speak(utterance);
+          });
         }
 
-        // Text input event handlers
         sendBtn.addEventListener('click', () => {
           const val = commandInput.value.trim();
-          if (val) {
-            commandInput.value = '';
-            executeAssistantResponse(val);
-          }
+          if (val) { commandInput.value = ''; executeAssistantResponse(val); }
         });
 
         commandInput.addEventListener('keypress', (e) => {
           if (e.key === 'Enter') {
             const val = commandInput.value.trim();
-            if (val) {
-              commandInput.value = '';
-              executeAssistantResponse(val);
-            }
+            if (val) { commandInput.value = ''; executeAssistantResponse(val); }
           }
         });
 
-        // Speech Recognition Engine
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
           const recognition = new SpeechRecognition();
@@ -623,11 +763,9 @@
 
           recognition.onresult = (event) => {
             if (isProcessing) return;
-
             let text = event.results[event.results.length - 1][0].transcript.trim();
             transcriptEl.innerText = `Hearing: "${text}"`;
 
-            // Wake word trigger
             if (text.toLowerCase().includes('animus')) {
               const cleanQuery = text.toLowerCase().replace('animus', '').trim();
               if (cleanQuery.length > 2) {
@@ -639,14 +777,8 @@
             }
           };
 
-          recognition.onerror = (err) => {
-            console.warn('Speech recognition warning:', err);
-          };
-
-          recognition.onend = () => {
-            try { recognition.start(); } catch(e) {}
-          };
-
+          recognition.onerror = () => {};
+          recognition.onend = () => { try { recognition.start(); } catch(e) {} };
           recognition.start();
         }
       });
