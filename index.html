@@ -261,7 +261,7 @@
     }
 
     /* =========================================================================
-       CINEMATIC HUD LAYOUT
+       CINEMATIC HUD LAYOUT & CORNER BRACKETS
        ========================================================================= */
     .mockup-grid {
       flex: 1;
@@ -479,4 +479,388 @@
         overflow-y: auto;
         height: calc(100vh - 60px);
       }
-      .video
+      .video-frame {
+        min-height: 280px;
+      }
+      .hardware-shelf {
+        width: 90vw;
+      }
+      .shelf-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LANDING HOME SCREEN -->
+  <div id="home-screen">
+    <div class="title-tag">PROJECT ANIMUS v2 • SYSTEM OVERVIEW</div>
+    <h1>Multimodal Cybernetic Interface</h1>
+    <p class="subtitle">
+      Real-time kinematic joint telemetry, low-latency vision processing, and automated voice synthesis module.
+    </p>
+    <button class="launch-btn" id="start-btn">CONNECT ROBOTIC HAND & LAUNCH HUD</button>
+  </div>
+
+  <!-- HUD DASHBOARD -->
+  <div id="hud-screen">
+    <header class="top-navbar">
+      <div class="brand-title">
+        <span>PROJECT ANIMUS v2</span>
+        <div class="status-badge">
+          <div class="pulse-dot"></div>
+          CORE ACTIVE
+        </div>
+      </div>
+      <div id="sys-ticker" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">
+        FPS: <span style="color: var(--primary-blue);">60.0</span> | LATENCY: <span style="color: var(--primary-blue);">12ms</span>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">
+        WAKE WORD: <span style="color: var(--accent-red);">"ANIMUS"</span>
+      </div>
+    </header>
+
+    <!-- COLLAPSIBLE BLUETOOTH HARDWARE SHELF -->
+    <div class="shelf-toggle-tab" id="shelf-toggle">HARDWARE & BLUETOOTH ▾</div>
+    <div class="hardware-shelf" id="hardware-shelf">
+      <div class="shelf-grid">
+        <div>
+          <div class="shelf-section-title">BLUETOOTH LINK</div>
+          <div class="motor-stat">STATUS: <span id="bt-status" style="color: var(--accent-red);">WAITING FOR CONNECTION</span></div>
+          <div class="motor-stat">DEVICE: <span id="bt-device">NONE</span></div>
+          <button class="bt-connect-btn" id="bt-connect-btn">CONNECT TO ROBOT ARM</button>
+        </div>
+        <div>
+          <div class="shelf-section-title">MOTOR CHARGE & POWER</div>
+          <div class="motor-stat">MOTOR 1 (THUMB): <span id="m1-stat">--</span></div>
+          <div class="motor-stat">MOTOR 2 (INDEX): <span id="m2-stat">--</span></div>
+          <div class="motor-stat">MOTOR 3 (MIDDLE): <span id="m3-stat">--</span></div>
+          <div class="motor-stat">MOTOR 4 (RING): <span id="m4-stat">--</span></div>
+          <div class="motor-stat">MOTOR 5 (PINKY): <span id="m5-stat">--</span></div>
+        </div>
+      </div>
+    </div>
+
+    <main class="mockup-grid">
+      <!-- Left Box: Video Feed -->
+      <div class="video-frame">
+        <video id="webcam" playsinline></video>
+        <canvas id="output_canvas" width="1280" height="720"></canvas>
+      </div>
+
+      <!-- Right Stack -->
+      <div class="right-stack">
+        <div class="angles-card" id="angles-card">
+          <div class="card-title">ANGLES OF EACH SEPARATE FINGER</div>
+
+          <div class="joint-metric">
+            <div class="joint-label">THUMB JOINT <span class="val" id="val-thumb">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-thumb"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">INDEX FINGER <span class="val" id="val-index">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-index"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">MIDDLE FINGER <span class="val" id="val-middle">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-middle"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-ring"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-pinky"></div></div>
+          </div>
+        </div>
+
+        <div class="voice-card" id="voice-card">
+          <div>
+            <div class="voice-header">
+              <div class="voice-wave">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+              <span id="voice-status-title">ANIMUS ENGINE: STANDBY (Say "ANIMUS")</span>
+            </div>
+            <div class="transcript-box" id="transcript-display">
+              Awaiting voice command or typed input...
+            </div>
+            <div class="reply-box" id="reply-display" style="display: none;"></div>
+          </div>
+
+          <div class="input-row">
+            <input type="text" id="command-input" placeholder="Type query or command (e.g. calibrate, reset)..." />
+            <button id="send-btn">SEND</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Toggle Hardware Shelf
+      const shelfToggle = document.getElementById('shelf-toggle');
+      const hardwareShelf = document.getElementById('hardware-shelf');
+      shelfToggle.addEventListener('click', () => {
+        hardwareShelf.classList.toggle('open');
+        shelfToggle.innerText = hardwareShelf.classList.contains('open') ? 'HARDWARE & BLUETOOTH ▴' : 'HARDWARE & BLUETOOTH ▾';
+      });
+
+      // Bluetooth Connection Handler
+      const btConnectBtn = document.getElementById('bt-connect-btn');
+      const btStatus = document.getElementById('bt-status');
+      const btDevice = document.getElementById('bt-device');
+
+      btConnectBtn.addEventListener('click', async () => {
+        try {
+          if (!navigator.bluetooth) {
+            alert('Web Bluetooth is not supported on this browser.');
+            return;
+          }
+          btStatus.innerText = 'PAIRING...';
+          const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: ['battery_service']
+          });
+          
+          btDevice.innerText = device.name || 'ANIMUS_ARM';
+          btStatus.innerText = 'CONNECTED';
+          btStatus.style.color = '#00FF66';
+          btConnectBtn.innerText = 'DISCONNECT';
+
+          document.getElementById('m1-stat').innerText = '4.1V [88%]';
+          document.getElementById('m2-stat').innerText = '4.0V [84%]';
+          document.getElementById('m3-stat').innerText = '4.2V [91%]';
+          document.getElementById('m4-stat').innerText = '3.9V [79%]';
+          document.getElementById('m5-stat').innerText = '4.1V [87%]';
+        } catch (err) {
+          console.warn('Bluetooth connection cancelled or failed:', err);
+          btStatus.innerText = 'CONNECTION FAILED';
+        }
+      });
+
+      const startBtn = document.getElementById('start-btn');
+      startBtn.addEventListener('click', async () => {
+        document.getElementById('home-screen').style.display = 'none';
+        document.getElementById('hud-screen').style.display = 'flex';
+
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+
+        if (typeof Hands === 'undefined') {
+          alert('MediaPipe failed to load from CDN. Please check your network firewall.');
+          return;
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: true, 
+            audio: false 
+          });
+          videoElement.srcObject = stream;
+          await videoElement.play();
+        } catch (err) {
+          console.error('Camera failure:', err);
+          alert('Camera access error: ' + err.message + '. Make sure camera permissions are allowed in site settings.');
+          return;
+        }
+
+        const hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 0,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
+
+        hands.onResults((results) => {
+          canvasCtx.save();
+          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+          if (results.image) {
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+          }
+
+          if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            const landmarks = results.multiHandLandmarks[0];
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#4285F4', lineWidth: 3 });
+            drawLandmarks(canvasCtx, landmarks, { color: '#FF3344', fillColor: '#FFFFFF', radius: 4 });
+
+            const wrist = landmarks[0];
+            const tips = [4, 8, 12, 16, 20];
+            const names = ['thumb', 'index', 'middle', 'ring', 'pinky'];
+
+            tips.forEach((tipIdx, i) => {
+              const tip = landmarks[tipIdx];
+              const dist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+              let angle = Math.round(Math.min(180, Math.max(0, (dist / 0.5) * 180)));
+              document.getElementById(`val-${names[i]}`).innerText = `${angle}°`;
+              document.getElementById(`bar-${names[i]}`).style.width = `${(angle / 180) * 100}%`;
+            });
+          }
+          canvasCtx.restore();
+        });
+
+        let lastTime = 0;
+        const fpsInterval = 1000 / 30;
+
+        async function processFrame(timestamp) {
+          if (!lastTime) lastTime = timestamp;
+          const elapsed = timestamp - lastTime;
+
+          if (elapsed >= fpsInterval) {
+            lastTime = timestamp - (elapsed % fpsInterval);
+            if (videoElement.readyState >= 2) {
+              try {
+                await hands.send({ image: videoElement });
+              } catch (e) {
+                console.error('MediaPipe processing error:', e);
+              }
+            }
+          }
+          requestAnimationFrame(processFrame);
+        }
+        requestAnimationFrame(processFrame);
+
+        // Assistant Logic
+        const anglesCard = document.getElementById('angles-card');
+        const voiceCard = document.getElementById('voice-card');
+        const transcriptEl = document.getElementById('transcript-display');
+        const replyEl = document.getElementById('reply-display');
+        const statusTitle = document.getElementById('voice-status-title');
+        const commandInput = document.getElementById('command-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        let interactionCount = 0;
+        let isProcessing = false;
+
+        function processCommandQuery(rawText) {
+          const q = rawText.toLowerCase().trim();
+          if (q.includes('calibrate') || q.includes('calibration')) {
+            return "Entering sensor calibration mode. Please hold hand steady.";
+          } else if (q.includes('reset')) {
+            return "Telemetry baselines reset to zero.";
+          } else if (q.includes('stop') || q.includes('emergency')) {
+            return "Emergency stop executed. All hardware outputs halted.";
+          } else if (q.includes('status') || q.includes('system')) {
+            return "All telemetry channels operational. Awaiting Bluetooth linkage.";
+          } else if (q.includes('who are you') || q.includes('name')) {
+            return "I am ANIMUS, your cybernetic voice and vision assistant.";
+          } else if (q.includes('hand') || q.includes('finger')) {
+            return "Tracking all 5 fingers across all 5 motor axes smoothly.";
+          } else {
+            return `Command processed successfully for: "${rawText}".`;
+          }
+        }
+
+        function typeWriterEffect(text, element, callback) {
+          element.innerHTML = 'ANIMUS: "';
+          let i = 0;
+          function type() {
+            if (i < text.length) {
+              element.innerHTML += text.charAt(i);
+              i++;
+              setTimeout(type, 20);
+            } else {
+              element.innerHTML += '"';
+              if (callback) callback();
+            }
+          }
+          type();
+        }
+
+        function executeAssistantResponse(queryText) {
+          if (isProcessing) return;
+          isProcessing = true;
+
+          interactionCount++;
+          voiceCard.classList.add('active-listen');
+          statusTitle.innerText = 'ANIMUS PROCESSING...';
+          transcriptEl.innerText = `"${queryText}"`;
+
+          if (interactionCount >= 2) {
+            anglesCard.classList.add('collapsed');
+          }
+
+          const replyText = processCommandQuery(queryText);
+          replyEl.style.display = 'block';
+
+          typeWriterEffect(replyText, replyEl, () => {
+            const utterance = new SpeechSynthesisUtterance(replyText);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+
+            utterance.onend = () => {
+              setTimeout(() => {
+                anglesCard.classList.remove('collapsed');
+                voiceCard.classList.remove('active-listen');
+                statusTitle.innerText = 'ANIMUS ENGINE: STANDBY (Say "ANIMUS")';
+                transcriptEl.innerText = 'Awaiting voice command or typed input...';
+                replyEl.style.display = 'none';
+                isProcessing = false;
+              }, 2500);
+            };
+
+            window.speechSynthesis.speak(utterance);
+          });
+        }
+
+        sendBtn.addEventListener('click', () => {
+          const val = commandInput.value.trim();
+          if (val) { commandInput.value = ''; executeAssistantResponse(val); }
+        });
+
+        commandInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            const val = commandInput.value.trim();
+            if (val) { commandInput.value = ''; executeAssistantResponse(val); }
+          }
+        });
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.lang = 'en-US';
+
+          recognition.onresult = (event) => {
+            if (isProcessing) return;
+            let text = event.results[event.results.length - 1][0].transcript.trim();
+            transcriptEl.innerText = `Hearing: "${text}"`;
+
+            if (text.toLowerCase().includes('animus')) {
+              const cleanQuery = text.toLowerCase().replace('animus', '').trim();
+              if (cleanQuery.length > 2) {
+                executeAssistantResponse(cleanQuery);
+              } else {
+                statusTitle.innerText = 'ANIMUS LISTENING...';
+                voiceCard.classList.add('active-listen');
+              }
+            }
+          };
+
+          recognition.onerror = () => {};
+          recognition.onend = () => {
+            setTimeout(() => {
+              try { recognition.start(); } catch(e) {}
+            }, 1000);
+          };
+
+          try {
+            recognition.start();
+          } catch(e) {}
+        }
+      });
+    });
+  </script>
+</body>
+</html>
