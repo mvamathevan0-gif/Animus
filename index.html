@@ -13,13 +13,14 @@
 
   <style>
     :root {
-      --bg-black: #050505;
+      --bg-black: #08080a;
       --primary-blue: #4285F4;
       --accent-red: #FF3344;
-      --card-base: #121214;
-      --card-border: rgba(66, 133, 244, 0.25);
-      --text-white: #F3F4F6;
-      --text-dim: #9CA3AF;
+      --accent-green: #00FF66;
+      --card-base: #101114;
+      --card-border: rgba(66, 133, 244, 0.2);
+      --text-white: #F8FAFC;
+      --text-dim: #94A3B8;
       --font-mono: 'Courier New', Courier, monospace;
     }
 
@@ -28,9 +29,9 @@
     body {
       background-color: var(--bg-black);
       background-image: 
-        radial-gradient(circle at 50% 50%, rgba(66, 133, 244, 0.04) 0%, transparent 80%),
-        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        radial-gradient(circle at 50% 50%, rgba(66, 133, 244, 0.05) 0%, transparent 80%),
+        linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
       background-size: 100% 100%, 30px 30px, 30px 30px;
       color: var(--text-white);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -115,7 +116,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(18, 18, 20, 0.95);
+      background: rgba(16, 17, 20, 0.95);
       border-bottom: 1px solid var(--card-border);
       backdrop-filter: blur(10px);
       z-index: 25;
@@ -160,16 +161,14 @@
       100% { opacity: 0.3; }
     }
 
-    /* =========================================================================
-       COLLAPSIBLE BLUETOOTH HARDWARE SHELF
-       ========================================================================= */
+    /* COLLAPSIBLE HARDWARE SHELF */
     .hardware-shelf {
       position: absolute;
       top: 60px;
       left: 50%;
       transform: translateX(-50%);
       width: 600px;
-      background: rgba(18, 18, 20, 0.98);
+      background: rgba(16, 17, 20, 0.98);
       border: 1px solid var(--card-border);
       border-top: none;
       border-bottom-left-radius: 10px;
@@ -193,7 +192,7 @@
       top: 60px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(18, 18, 20, 0.95);
+      background: rgba(16, 17, 20, 0.95);
       border: 1px solid var(--card-border);
       border-top: none;
       padding: 4px 18px;
@@ -260,9 +259,7 @@
       box-shadow: 0 0 15px rgba(66, 133, 244, 0.4);
     }
 
-    /* =========================================================================
-       CINEMATIC HUD LAYOUT & CORNER BRACKETS
-       ========================================================================= */
+    /* GRID LAYOUT & CORNER BRACKETS */
     .mockup-grid {
       flex: 1;
       display: grid;
@@ -297,6 +294,7 @@
       border-width: 0 2px 2px 0;
     }
 
+    /* VIDEO FEED WITH OVERLAY PILL */
     .video-frame {
       background: var(--card-base);
       border: 1px solid var(--card-border);
@@ -308,12 +306,50 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
+    .video-hud-overlay {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(8, 8, 10, 0.85);
+      border: 1px solid var(--accent-red);
+      color: var(--accent-red);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      z-index: 10;
+      letter-spacing: 1px;
+      backdrop-filter: blur(4px);
+      transition: all 0.3s ease;
+    }
+
+    .video-hud-overlay.connected {
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .gesture-timer-bar {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      background: rgba(8, 8, 10, 0.85);
+      border: 1px solid var(--primary-blue);
+      color: var(--primary-blue);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      z-index: 10;
+      display: none;
+    }
+
     video { display: none; }
     canvas {
       width: 100%;
       height: 100%;
       object-fit: cover;
       transform: scaleX(-1);
+      will-change: transform;
     }
 
     .right-stack {
@@ -381,6 +417,12 @@
       flex-direction: column;
       justify-content: space-between;
       position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .voice-card.sleeping {
+      opacity: 0.6;
+      border-color: rgba(255, 255, 255, 0.1);
     }
 
     .voice-card.active-listen {
@@ -472,22 +514,16 @@
       cursor: pointer;
     }
 
-    /* Responsive Mobile Layout */
+    /* Mobile Layout */
     @media (max-width: 768px) {
       .mockup-grid {
         grid-template-columns: 1fr;
         overflow-y: auto;
         height: calc(100vh - 60px);
       }
-      .video-frame {
-        min-height: 280px;
-      }
-      .hardware-shelf {
-        width: 90vw;
-      }
-      .shelf-grid {
-        grid-template-columns: 1fr;
-      }
+      .video-frame { min-height: 280px; }
+      .hardware-shelf { width: 90vw; }
+      .shelf-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -514,14 +550,14 @@
         </div>
       </div>
       <div id="sys-ticker" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">
-        FPS: <span style="color: var(--primary-blue);">60.0</span> | LATENCY: <span style="color: var(--primary-blue);">12ms</span>
+        FPS: <span style="color: var(--primary-blue);">30.0</span> | LATENCY: <span style="color: var(--primary-blue);">12ms</span>
       </div>
       <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">
         WAKE WORD: <span style="color: var(--accent-red);">"ANIMUS"</span>
       </div>
     </header>
 
-    <!-- COLLAPSIBLE BLUETOOTH HARDWARE SHELF -->
+    <!-- HARDWARE SHELF -->
     <div class="shelf-toggle-tab" id="shelf-toggle">HARDWARE & BLUETOOTH ▾</div>
     <div class="hardware-shelf" id="hardware-shelf">
       <div class="shelf-grid">
@@ -543,13 +579,15 @@
     </div>
 
     <main class="mockup-grid">
-      <!-- Left Box: Video Feed -->
+      <!-- VIDEO FEED WITH OVERLAY PILL -->
       <div class="video-frame">
+        <div class="video-hud-overlay" id="hud-bt-pill">[ BT: DISCONNECTED ]</div>
+        <div class="gesture-timer-bar" id="gesture-bar">HOLD PEACE SIGN: 3s</div>
         <video id="webcam" playsinline></video>
         <canvas id="output_canvas" width="1280" height="720"></canvas>
       </div>
 
-      <!-- Right Stack -->
+      <!-- RIGHT TELEMETRY & VOICE STACK -->
       <div class="right-stack">
         <div class="angles-card" id="angles-card">
           <div class="card-title">ANGLES OF EACH SEPARATE FINGER</div>
@@ -560,307 +598,4 @@
           </div>
           <div class="joint-metric">
             <div class="joint-label">INDEX FINGER <span class="val" id="val-index">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-index"></div></div>
-          </div>
-          <div class="joint-metric">
-            <div class="joint-label">MIDDLE FINGER <span class="val" id="val-middle">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-middle"></div></div>
-          </div>
-          <div class="joint-metric">
-            <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-ring"></div></div>
-          </div>
-          <div class="joint-metric">
-            <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-pinky"></div></div>
-          </div>
-        </div>
-
-        <div class="voice-card" id="voice-card">
-          <div>
-            <div class="voice-header">
-              <div class="voice-wave">
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-              </div>
-              <span id="voice-status-title">ANIMUS ENGINE: STANDBY (Say "ANIMUS")</span>
-            </div>
-            <div class="transcript-box" id="transcript-display">
-              Awaiting voice command or typed input...
-            </div>
-            <div class="reply-box" id="reply-display" style="display: none;"></div>
-          </div>
-
-          <div class="input-row">
-            <input type="text" id="command-input" placeholder="Type query or command (e.g. calibrate, reset)..." />
-            <button id="send-btn">SEND</button>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Toggle Hardware Shelf
-      const shelfToggle = document.getElementById('shelf-toggle');
-      const hardwareShelf = document.getElementById('hardware-shelf');
-      shelfToggle.addEventListener('click', () => {
-        hardwareShelf.classList.toggle('open');
-        shelfToggle.innerText = hardwareShelf.classList.contains('open') ? 'HARDWARE & BLUETOOTH ▴' : 'HARDWARE & BLUETOOTH ▾';
-      });
-
-      // Bluetooth Connection Handler
-      const btConnectBtn = document.getElementById('bt-connect-btn');
-      const btStatus = document.getElementById('bt-status');
-      const btDevice = document.getElementById('bt-device');
-
-      btConnectBtn.addEventListener('click', async () => {
-        try {
-          if (!navigator.bluetooth) {
-            alert('Web Bluetooth is not supported on this browser.');
-            return;
-          }
-          btStatus.innerText = 'PAIRING...';
-          const device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: ['battery_service']
-          });
-          
-          btDevice.innerText = device.name || 'ANIMUS_ARM';
-          btStatus.innerText = 'CONNECTED';
-          btStatus.style.color = '#00FF66';
-          btConnectBtn.innerText = 'DISCONNECT';
-
-          document.getElementById('m1-stat').innerText = '4.1V [88%]';
-          document.getElementById('m2-stat').innerText = '4.0V [84%]';
-          document.getElementById('m3-stat').innerText = '4.2V [91%]';
-          document.getElementById('m4-stat').innerText = '3.9V [79%]';
-          document.getElementById('m5-stat').innerText = '4.1V [87%]';
-        } catch (err) {
-          console.warn('Bluetooth connection cancelled or failed:', err);
-          btStatus.innerText = 'CONNECTION FAILED';
-        }
-      });
-
-      const startBtn = document.getElementById('start-btn');
-      startBtn.addEventListener('click', async () => {
-        document.getElementById('home-screen').style.display = 'none';
-        document.getElementById('hud-screen').style.display = 'flex';
-
-        const videoElement = document.getElementById('webcam');
-        const canvasElement = document.getElementById('output_canvas');
-        const canvasCtx = canvasElement.getContext('2d');
-
-        if (typeof Hands === 'undefined') {
-          alert('MediaPipe failed to load from CDN. Please check your network firewall.');
-          return;
-        }
-
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: true, 
-            audio: false 
-          });
-          videoElement.srcObject = stream;
-          await videoElement.play();
-        } catch (err) {
-          console.error('Camera failure:', err);
-          alert('Camera access error: ' + err.message + '. Make sure camera permissions are allowed in site settings.');
-          return;
-        }
-
-        const hands = new Hands({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-
-        hands.setOptions({
-          maxNumHands: 1,
-          modelComplexity: 0,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
-
-        hands.onResults((results) => {
-          canvasCtx.save();
-          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-          if (results.image) {
-            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-          }
-
-          if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            const landmarks = results.multiHandLandmarks[0];
-            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#4285F4', lineWidth: 3 });
-            drawLandmarks(canvasCtx, landmarks, { color: '#FF3344', fillColor: '#FFFFFF', radius: 4 });
-
-            const wrist = landmarks[0];
-            const tips = [4, 8, 12, 16, 20];
-            const names = ['thumb', 'index', 'middle', 'ring', 'pinky'];
-
-            tips.forEach((tipIdx, i) => {
-              const tip = landmarks[tipIdx];
-              const dist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
-              let angle = Math.round(Math.min(180, Math.max(0, (dist / 0.5) * 180)));
-              document.getElementById(`val-${names[i]}`).innerText = `${angle}°`;
-              document.getElementById(`bar-${names[i]}`).style.width = `${(angle / 180) * 100}%`;
-            });
-          }
-          canvasCtx.restore();
-        });
-
-        let lastTime = 0;
-        const fpsInterval = 1000 / 30;
-
-        async function processFrame(timestamp) {
-          if (!lastTime) lastTime = timestamp;
-          const elapsed = timestamp - lastTime;
-
-          if (elapsed >= fpsInterval) {
-            lastTime = timestamp - (elapsed % fpsInterval);
-            if (videoElement.readyState >= 2) {
-              try {
-                await hands.send({ image: videoElement });
-              } catch (e) {
-                console.error('MediaPipe processing error:', e);
-              }
-            }
-          }
-          requestAnimationFrame(processFrame);
-        }
-        requestAnimationFrame(processFrame);
-
-        // Assistant Logic
-        const anglesCard = document.getElementById('angles-card');
-        const voiceCard = document.getElementById('voice-card');
-        const transcriptEl = document.getElementById('transcript-display');
-        const replyEl = document.getElementById('reply-display');
-        const statusTitle = document.getElementById('voice-status-title');
-        const commandInput = document.getElementById('command-input');
-        const sendBtn = document.getElementById('send-btn');
-
-        let interactionCount = 0;
-        let isProcessing = false;
-
-        function processCommandQuery(rawText) {
-          const q = rawText.toLowerCase().trim();
-          if (q.includes('calibrate') || q.includes('calibration')) {
-            return "Entering sensor calibration mode. Please hold hand steady.";
-          } else if (q.includes('reset')) {
-            return "Telemetry baselines reset to zero.";
-          } else if (q.includes('stop') || q.includes('emergency')) {
-            return "Emergency stop executed. All hardware outputs halted.";
-          } else if (q.includes('status') || q.includes('system')) {
-            return "All telemetry channels operational. Awaiting Bluetooth linkage.";
-          } else if (q.includes('who are you') || q.includes('name')) {
-            return "I am ANIMUS, your cybernetic voice and vision assistant.";
-          } else if (q.includes('hand') || q.includes('finger')) {
-            return "Tracking all 5 fingers across all 5 motor axes smoothly.";
-          } else {
-            return `Command processed successfully for: "${rawText}".`;
-          }
-        }
-
-        function typeWriterEffect(text, element, callback) {
-          element.innerHTML = 'ANIMUS: "';
-          let i = 0;
-          function type() {
-            if (i < text.length) {
-              element.innerHTML += text.charAt(i);
-              i++;
-              setTimeout(type, 20);
-            } else {
-              element.innerHTML += '"';
-              if (callback) callback();
-            }
-          }
-          type();
-        }
-
-        function executeAssistantResponse(queryText) {
-          if (isProcessing) return;
-          isProcessing = true;
-
-          interactionCount++;
-          voiceCard.classList.add('active-listen');
-          statusTitle.innerText = 'ANIMUS PROCESSING...';
-          transcriptEl.innerText = `"${queryText}"`;
-
-          if (interactionCount >= 2) {
-            anglesCard.classList.add('collapsed');
-          }
-
-          const replyText = processCommandQuery(queryText);
-          replyEl.style.display = 'block';
-
-          typeWriterEffect(replyText, replyEl, () => {
-            const utterance = new SpeechSynthesisUtterance(replyText);
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
-
-            utterance.onend = () => {
-              setTimeout(() => {
-                anglesCard.classList.remove('collapsed');
-                voiceCard.classList.remove('active-listen');
-                statusTitle.innerText = 'ANIMUS ENGINE: STANDBY (Say "ANIMUS")';
-                transcriptEl.innerText = 'Awaiting voice command or typed input...';
-                replyEl.style.display = 'none';
-                isProcessing = false;
-              }, 2500);
-            };
-
-            window.speechSynthesis.speak(utterance);
-          });
-        }
-
-        sendBtn.addEventListener('click', () => {
-          const val = commandInput.value.trim();
-          if (val) { commandInput.value = ''; executeAssistantResponse(val); }
-        });
-
-        commandInput.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            const val = commandInput.value.trim();
-            if (val) { commandInput.value = ''; executeAssistantResponse(val); }
-          }
-        });
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-          const recognition = new SpeechRecognition();
-          recognition.continuous = true;
-          recognition.interimResults = true;
-          recognition.lang = 'en-US';
-
-          recognition.onresult = (event) => {
-            if (isProcessing) return;
-            let text = event.results[event.results.length - 1][0].transcript.trim();
-            transcriptEl.innerText = `Hearing: "${text}"`;
-
-            if (text.toLowerCase().includes('animus')) {
-              const cleanQuery = text.toLowerCase().replace('animus', '').trim();
-              if (cleanQuery.length > 2) {
-                executeAssistantResponse(cleanQuery);
-              } else {
-                statusTitle.innerText = 'ANIMUS LISTENING...';
-                voiceCard.classList.add('active-listen');
-              }
-            }
-          };
-
-          recognition.onerror = () => {};
-          recognition.onend = () => {
-            setTimeout(() => {
-              try { recognition.start(); } catch(e) {}
-            }, 1000);
-          };
-
-          try {
-            recognition.start();
-          } catch(e) {}
-        }
-      });
-    });
-  </script>
-</body>
-</html>
+            <div class="bar-bg"><div class="bar-fill
