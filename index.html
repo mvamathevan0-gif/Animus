@@ -161,7 +161,7 @@
       100% { opacity: 0.3; }
     }
 
-    /* COLLAPSIBLE HARDWARE SHELF */
+    /* HARDWARE SHELF */
     .hardware-shelf {
       position: absolute;
       top: 60px;
@@ -320,7 +320,6 @@
       z-index: 10;
       letter-spacing: 1px;
       backdrop-filter: blur(4px);
-      transition: all 0.3s ease;
     }
 
     .video-hud-overlay.connected {
@@ -368,8 +367,6 @@
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       overflow: hidden;
     }
-
-    .angles-card.collapsed { display: none; }
 
     .card-title {
       font-family: var(--font-mono);
@@ -598,4 +595,331 @@
           </div>
           <div class="joint-metric">
             <div class="joint-label">INDEX FINGER <span class="val" id="val-index">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill
+            <div class="bar-bg"><div class="bar-fill" id="bar-index"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">MIDDLE FINGER <span class="val" id="val-middle">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-middle"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="val-ring"></div></div>
+          </div>
+          <div class="joint-metric">
+            <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="val-pinky"></div></div>
+          </div>
+        </div>
+
+        <div class="voice-card sleeping" id="voice-card">
+          <div>
+            <div class="voice-header">
+              <div class="voice-wave">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+              <span id="voice-status-title">ANIMUS: SLEEP MODE (Hold Peace Sign 3s to Wake)</span>
+            </div>
+            <div class="transcript-box" id="transcript-display">
+              System sleeping. Use ✌️ gesture for 3 seconds or say "ANIMUS" to wake up.
+            </div>
+            <div class="reply-box" id="reply-display" style="display: none;"></div>
+          </div>
+
+          <div class="input-row">
+            <input type="text" id="command-input" placeholder="Type query or command (e.g. calibrate, reset)..." />
+            <button id="send-btn">SEND</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const shelfToggle = document.getElementById('shelf-toggle');
+      const hardwareShelf = document.getElementById('hardware-shelf');
+      shelfToggle.addEventListener('click', () => {
+        hardwareShelf.classList.toggle('open');
+        shelfToggle.innerText = hardwareShelf.classList.contains('open') ? 'HARDWARE & BLUETOOTH ▴' : 'HARDWARE & BLUETOOTH ▾';
+      });
+
+      const btConnectBtn = document.getElementById('bt-connect-btn');
+      const btStatus = document.getElementById('bt-status');
+      const btDevice = document.getElementById('bt-device');
+      const hudBtPill = document.getElementById('hud-bt-pill');
+
+      btConnectBtn.addEventListener('click', async () => {
+        try {
+          if (!navigator.bluetooth) {
+            alert('Web Bluetooth is not supported on this browser.');
+            return;
+          }
+          btStatus.innerText = 'PAIRING...';
+          const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: ['battery_service']
+          });
+          
+          btDevice.innerText = device.name || 'ANIMUS_ARM';
+          btStatus.innerText = 'CONNECTED';
+          btStatus.style.color = '#00FF66';
+          btConnectBtn.innerText = 'DISCONNECT';
+
+          hudBtPill.innerText = '[ BT: LINKED ]';
+          hudBtPill.classList.add('connected');
+
+          document.getElementById('m1-stat').innerText = '4.1V [88%]';
+          document.getElementById('m2-stat').innerText = '4.0V [84%]';
+          document.getElementById('m3-stat').innerText = '4.2V [91%]';
+          document.getElementById('m4-stat').innerText = '3.9V [79%]';
+          document.getElementById('m5-stat').innerText = '4.1V [87%]';
+        } catch (err) {
+          console.warn('Bluetooth connection cancelled or failed:', err);
+          btStatus.innerText = 'CONNECTION FAILED';
+        }
+      });
+
+      const startBtn = document.getElementById('start-btn');
+      startBtn.addEventListener('click', async () => {
+        try {
+          document.getElementById('home-screen').style.display = 'none';
+          document.getElementById('hud-screen').style.display = 'flex';
+
+          const videoElement = document.getElementById('webcam');
+          const canvasElement = document.getElementById('output_canvas');
+          const canvasCtx = canvasElement.getContext('2d');
+
+          if (typeof Hands === 'undefined') {
+            alert('MediaPipe failed to load from CDN. Please check your network firewall.');
+            return;
+          }
+
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } }, 
+            audio: false 
+          });
+          videoElement.srcObject = stream;
+          await videoElement.play();
+
+          const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+          });
+
+          hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 0,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+          });
+
+          let peaceGestureStartTime = null;
+          const gestureBar = document.getElementById('gesture-bar');
+          const voiceCard = document.getElementById('voice-card');
+          const statusTitle = document.getElementById('voice-status-title');
+          const transcriptEl = document.getElementById('transcript-display');
+
+          let isAnimusAwake = false;
+
+          function wakeAnimus() {
+            isAnimusAwake = true;
+            voiceCard.classList.remove('sleeping');
+            voiceCard.classList.add('active-listen');
+            statusTitle.innerText = 'ANIMUS ENGINE: ONLINE & LISTENING';
+            transcriptEl.innerText = 'ANIMUS is awake. Say command or type query below.';
+            const utterance = new SpeechSynthesisUtterance("ANIMUS online. Ready for input.");
+            window.speechSynthesis.speak(utterance);
+          }
+
+          function sleepAnimus() {
+            isAnimusAwake = false;
+            voiceCard.classList.add('sleeping');
+            voiceCard.classList.remove('active-listen');
+            statusTitle.innerText = 'ANIMUS: SLEEP MODE (Hold Peace Sign 3s to Wake)';
+            transcriptEl.innerText = 'System sleeping. Use ✌️ gesture for 3 seconds to wake up.';
+          }
+
+          hands.onResults((results) => {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            if (results.image) {
+              canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            }
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+              const landmarks = results.multiHandLandmarks[0];
+              drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#4285F4', lineWidth: 3 });
+              drawLandmarks(canvasCtx, landmarks, { color: '#FF3344', fillColor: '#FFFFFF', radius: 4 });
+
+              const wrist = landmarks[0];
+              const tips = [4, 8, 12, 16, 20];
+              const names = ['thumb', 'index', 'middle', 'ring', 'pinky'];
+
+              const dists = tips.map(t => Math.hypot(landmarks[t].x - wrist.x, landmarks[t].y - wrist.y));
+
+              tips.forEach((tipIdx, i) => {
+                let angle = Math.round(Math.min(180, Math.max(0, (dists[i] / 0.5) * 180)));
+                document.getElementById(`val-${names[i]}`).innerText = `${angle}°`;
+                document.getElementById(`bar-${names[i]}`).style.width = `${(angle / 180) * 100}%`;
+              });
+
+              const isIndexOpen = dists[1] > 0.35;
+              const isMiddleOpen = dists[2] > 0.35;
+              const isRingClosed = dists[3] < 0.28;
+              const isPinkyClosed = dists[4] < 0.28;
+
+              const isPeaceSign = isIndexOpen && isMiddleOpen && isRingClosed && isPinkyClosed;
+              const isFist = dists.every(d => d < 0.25);
+
+              if (isFist) {
+                sleepAnimus();
+              }
+
+              if (isPeaceSign) {
+                if (!peaceGestureStartTime) peaceGestureStartTime = Date.now();
+                const elapsed = ((Date.now() - peaceGestureStartTime) / 1000).toFixed(1);
+                
+                gestureBar.style.display = 'block';
+                gestureBar.innerText = `HOLD PEACE SIGN: ${elapsed}s / 3.0s`;
+
+                if (elapsed >= 3.0 && !isAnimusAwake) {
+                  wakeAnimus();
+                  peaceGestureStartTime = null;
+                  gestureBar.style.display = 'none';
+                }
+              } else {
+                peaceGestureStartTime = null;
+                gestureBar.style.display = 'none';
+              }
+            }
+            canvasCtx.restore();
+          });
+
+          let lastTime = 0;
+          const fpsInterval = 1000 / 30;
+
+          async function processFrame(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const elapsed = timestamp - lastTime;
+
+            if (elapsed >= fpsInterval) {
+              lastTime = timestamp - (elapsed % fpsInterval);
+              if (videoElement.readyState >= 2) {
+                try { await hands.send({ image: videoElement }); } catch (e) {}
+              }
+            }
+            requestAnimationFrame(processFrame);
+          }
+          requestAnimationFrame(processFrame);
+
+          const replyEl = document.getElementById('reply-display');
+          const commandInput = document.getElementById('command-input');
+          const sendBtn = document.getElementById('send-btn');
+          let isProcessing = false;
+
+          function processCommandQuery(rawText) {
+            const q = rawText.toLowerCase().trim();
+            if (q.includes('calibrate') || q.includes('calibration')) {
+              return "Entering sensor calibration mode. Please hold hand steady.";
+            } else if (q.includes('reset')) {
+              return "Telemetry baselines reset to zero.";
+            } else if (q.includes('stop') || q.includes('emergency')) {
+              return "Emergency stop executed. All hardware outputs halted.";
+            } else if (q.includes('status') || q.includes('system')) {
+              return "All telemetry channels operational.";
+            } else if (q.includes('who are you') || q.includes('name')) {
+              return "I am ANIMUS, your cybernetic voice and vision assistant.";
+            } else {
+              return `Command processed successfully for: "${rawText}".`;
+            }
+          }
+
+          function typeWriterEffect(text, element, callback) {
+            element.innerHTML = 'ANIMUS: "';
+            let i = 0;
+            function type() {
+              if (i < text.length) {
+                element.innerHTML += text.charAt(i);
+                i++;
+                setTimeout(type, 20);
+              } else {
+                element.innerHTML += '"';
+                if (callback) callback();
+              }
+            }
+            type();
+          }
+
+          function executeAssistantResponse(queryText) {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            wakeAnimus();
+            transcriptEl.innerText = `"${queryText}"`;
+            const replyText = processCommandQuery(queryText);
+            replyEl.style.display = 'block';
+
+            typeWriterEffect(replyText, replyEl, () => {
+              const utterance = new SpeechSynthesisUtterance(replyText);
+              utterance.onend = () => {
+                setTimeout(() => {
+                  replyEl.style.display = 'none';
+                  isProcessing = false;
+                }, 2500);
+              };
+              window.speechSynthesis.speak(utterance);
+            });
+          }
+
+          sendBtn.addEventListener('click', () => {
+            const val = commandInput.value.trim();
+            if (val) { commandInput.value = ''; executeAssistantResponse(val); }
+          });
+
+          commandInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+              const val = commandInput.value.trim();
+              if (val) { commandInput.value = ''; executeAssistantResponse(val); }
+            }
+          });
+
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+              if (isProcessing) return;
+              let text = event.results[event.results.length - 1][0].transcript.trim();
+
+              if (text.toLowerCase().includes('animus')) {
+                const cleanQuery = text.toLowerCase().replace('animus', '').trim();
+                if (cleanQuery.length > 2) {
+                  executeAssistantResponse(cleanQuery);
+                } else {
+                  wakeAnimus();
+                }
+              }
+            };
+
+            recognition.onerror = () => {};
+            recognition.onend = () => {
+              setTimeout(() => { try { recognition.start(); } catch(e) {} }, 1000);
+            };
+
+            try { recognition.start(); } catch(e) {}
+          }
+        } catch (err) {
+          console.error("Launch error:", err);
+          alert("Failed to initialize HUD: " + err.message);
+          document.getElementById('home-screen').style.display = 'block';
+          document.getElementById('hud-screen').style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
