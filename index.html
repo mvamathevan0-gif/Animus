@@ -603,11 +603,11 @@
           </div>
           <div class="joint-metric">
             <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="val-ring"></div></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-ring"></div></div>
           </div>
           <div class="joint-metric">
             <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="val-pinky"></div></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-pinky"></div></div>
           </div>
         </div>
 
@@ -696,12 +696,19 @@
             return;
           }
 
+          // Request high-definition 720p stream
           const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { width: { ideal: 1280 }, height: { ideal: 720 } }, 
+            video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }, 
             audio: false 
           });
           videoElement.srcObject = stream;
-          await videoElement.play();
+          
+          // Wait for video metadata to load cleanly before starting MediaPipe loop
+          await new Promise((resolve) => {
+            videoElement.onloadedmetadata = () => {
+              videoElement.play().then(resolve).catch(resolve);
+            };
+          });
 
           const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -805,7 +812,7 @@
 
             if (elapsed >= fpsInterval) {
               lastTime = timestamp - (elapsed % fpsInterval);
-              if (videoElement.readyState >= 2) {
+              if (videoElement.readyState >= 2 && !videoElement.paused && !videoElement.ended) {
                 try { await hands.send({ image: videoElement }); } catch (e) {}
               }
             }
