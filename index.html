@@ -1,932 +1,370 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PROJECT ANIMUS — Cybernetic Vision & Voice HUD</title>
-  <link rel="icon" href="data:,">
-
-  <!-- MediaPipe Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-
-  <style>
-    :root {
-      --bg-black: #08080a;
-      --primary-blue: #4285F4;
-      --accent-red: #FF3344;
-      --accent-green: #00FF66;
-      --card-base: #101114;
-      --card-border: rgba(66, 133, 244, 0.2);
-      --text-white: #F8FAFC;
-      --text-dim: #94A3B8;
-      --font-mono: 'Courier New', Courier, monospace;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background-color: var(--bg-black);
-      background-image: 
-        radial-gradient(circle at 50% 50%, rgba(66, 133, 244, 0.05) 0%, transparent 80%),
-        linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
-      background-size: 100% 100%, 30px 30px, 30px 30px;
-      color: var(--text-white);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    /* Landing Screen */
-    #home-screen {
-      text-align: center;
-      max-width: 720px;
-      padding: 45px;
-      background: var(--card-base);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      box-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(66, 133, 244, 0.15);
-      z-index: 10;
-    }
-
-    .title-tag {
-      font-family: var(--font-mono);
-      color: var(--accent-red);
-      font-size: 12px;
-      letter-spacing: 4px;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      color: var(--text-white);
-      margin-bottom: 16px;
-    }
-
-    p.subtitle {
-      color: var(--text-dim);
-      font-size: 14px;
-      line-height: 1.6;
-      margin-bottom: 35px;
-    }
-
-    .launch-btn {
-      background: rgba(66, 133, 244, 0.1);
-      color: var(--primary-blue);
-      border: 1px solid var(--primary-blue);
-      padding: 14px 32px;
-      font-size: 14px;
-      font-weight: bold;
-      font-family: var(--font-mono);
-      letter-spacing: 2px;
-      border-radius: 6px;
-      cursor: pointer;
-      box-shadow: 0 0 15px rgba(66, 133, 244, 0.2);
-      transition: all 0.3s ease;
-    }
-
-    .launch-btn:hover {
-      background: var(--primary-blue);
-      color: #ffffff;
-      box-shadow: 0 0 25px rgba(66, 133, 244, 0.5);
-    }
-
-    /* HUD Dashboard Layout */
-    #hud-screen {
-      display: none;
-      width: 100vw;
-      height: 100vh;
-      flex-direction: column;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-
-    .top-navbar {
-      height: 60px;
-      padding: 0 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(16, 17, 20, 0.95);
-      border-bottom: 1px solid var(--card-border);
-      backdrop-filter: blur(10px);
-      z-index: 25;
-    }
-
-    .brand-title {
-      font-family: var(--font-mono);
-      font-size: 14px;
-      font-weight: bold;
-      letter-spacing: 2px;
-      color: var(--text-white);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--primary-blue);
-      background: rgba(5, 5, 5, 0.6);
-      padding: 4px 12px;
-      border-radius: 4px;
-      border: 1px solid rgba(66, 133, 244, 0.3);
-    }
-
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      background-color: var(--accent-red);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--accent-red);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 0.3; }
-      50% { opacity: 1.0; }
-      100% { opacity: 0.3; }
-    }
-
-    /* HARDWARE SHELF */
-    .hardware-shelf {
-      position: absolute;
-      top: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      background: rgba(16, 17, 20, 0.98);
-      border: 1px solid var(--card-border);
-      border-top: none;
-      border-bottom-left-radius: 10px;
-      border-bottom-right-radius: 10px;
-      box-shadow: 0 15px 30px rgba(0,0,0,0.8);
-      z-index: 30;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding 0.4s ease;
-      padding: 0 25px;
-    }
-
-    .hardware-shelf.open {
-      max-height: 220px;
-      padding: 20px 25px;
-      border-color: var(--primary-blue);
-    }
-
-    .shelf-toggle-tab {
-      position: absolute;
-      top: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(16, 17, 20, 0.95);
-      border: 1px solid var(--card-border);
-      border-top: none;
-      padding: 4px 18px;
-      border-bottom-left-radius: 8px;
-      border-bottom-right-radius: 8px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--primary-blue);
-      cursor: pointer;
-      z-index: 35;
-      transition: all 0.2s ease;
-    }
-
-    .shelf-toggle-tab:hover {
-      background: var(--primary-blue);
-      color: #fff;
-    }
-
-    .shelf-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      align-items: center;
-    }
-
-    .shelf-section-title {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--accent-red);
-      letter-spacing: 2px;
-      margin-bottom: 8px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding-bottom: 4px;
-    }
-
-    .motor-stat {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-dim);
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .motor-stat span { color: var(--text-white); }
-
-    .bt-connect-btn {
-      background: rgba(66, 133, 244, 0.15);
-      color: var(--primary-blue);
-      border: 1px solid var(--primary-blue);
-      padding: 10px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 10px;
-      transition: all 0.2s;
-    }
-
-    .bt-connect-btn:hover {
-      background: var(--primary-blue);
-      color: #fff;
-      box-shadow: 0 0 15px rgba(66, 133, 244, 0.4);
-    }
-
-    /* GRID LAYOUT & CORNER BRACKETS */
-    .mockup-grid {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      padding: 20px;
-      height: calc(100vh - 60px);
-      overflow: hidden;
-    }
-
-    .video-frame, .angles-card, .voice-card {
-      position: relative;
-    }
-
-    .video-frame::before, .angles-card::before, .voice-card::before,
-    .video-frame::after, .angles-card::after, .voice-card::after {
-      content: '';
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      border-color: var(--primary-blue);
-      border-style: solid;
-      pointer-events: none;
-      z-index: 5;
-    }
-    .video-frame::before, .angles-card::before, .voice-card::before {
-      top: 6px; left: 6px;
-      border-width: 2px 0 0 2px;
-    }
-    .video-frame::after, .angles-card::after, .voice-card::after {
-      bottom: 6px; right: 6px;
-      border-width: 0 2px 2px 0;
-    }
-
-    /* VIDEO FEED WITH OVERLAY PILL */
-    .video-frame {
-      background: var(--card-base);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    }
-
-    .video-hud-overlay {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: rgba(8, 8, 10, 0.85);
-      border: 1px solid var(--accent-red);
-      color: var(--accent-red);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 6px 12px;
-      border-radius: 4px;
-      z-index: 10;
-      letter-spacing: 1px;
-      backdrop-filter: blur(4px);
-    }
-
-    .video-hud-overlay.connected {
-      border-color: var(--accent-green);
-      color: var(--accent-green);
-    }
-
-    .gesture-timer-bar {
-      position: absolute;
-      bottom: 15px;
-      left: 15px;
-      background: rgba(8, 8, 10, 0.85);
-      border: 1px solid var(--primary-blue);
-      color: var(--primary-blue);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 6px 12px;
-      border-radius: 4px;
-      z-index: 10;
-      display: none;
-    }
-
-    video { display: none; }
-    canvas {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1);
-      will-change: transform;
-    }
-
-    .right-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      height: 100%;
-      position: relative;
-    }
-
-    .angles-card {
-      background: var(--card-base);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 20px;
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      overflow: hidden;
-    }
-
-    .card-title {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      color: var(--primary-blue);
-      letter-spacing: 2px;
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 8px;
-      margin-bottom: 15px;
-    }
-
-    .joint-metric { margin-bottom: 12px; }
-    .joint-label {
-      display: flex;
-      justify-content: space-between;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-bottom: 4px;
-    }
-    .joint-label span.val { color: var(--primary-blue); font-weight: bold; }
-
-    .bar-bg {
-      width: 100%;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 3px;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .bar-fill {
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, var(--primary-blue), var(--accent-red));
-      transition: width 0.1s linear;
-    }
-
-    .voice-card {
-      flex: 1;
-      background: var(--card-base);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-      transition: all 0.3s ease;
-    }
-
-    .voice-card.sleeping {
-      opacity: 0.6;
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .voice-card.active-listen {
-      border-color: var(--accent-red);
-      box-shadow: 0 0 30px rgba(255, 51, 68, 0.25);
-    }
-
-    .voice-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-mono);
-      font-size: 13px;
-      color: var(--accent-red);
-      margin-bottom: 12px;
-    }
-
-    .voice-wave {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      height: 14px;
-    }
-
-    .wave-bar {
-      width: 3px;
-      height: 100%;
-      background: var(--accent-red);
-      animation: wave 1s infinite ease-in-out;
-    }
-
-    .wave-bar:nth-child(2) { animation-delay: 0.2s; }
-    .wave-bar:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes wave {
-      0%, 100% { height: 4px; }
-      50% { height: 14px; }
-    }
-
-    .transcript-box {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      color: var(--text-white);
-      line-height: 1.5;
-      min-height: 60px;
-      word-break: break-word;
-    }
-
-    .reply-box {
-      margin-top: 10px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--primary-blue);
-      border-top: 1px solid var(--card-border);
-      padding-top: 10px;
-    }
-
-    .input-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 15px;
-      border-top: 1px solid var(--card-border);
-      padding-top: 12px;
-    }
-
-    .input-row input {
-      flex: 1;
-      background: rgba(5, 5, 5, 0.8);
-      border: 1px solid var(--card-border);
-      border-radius: 6px;
-      padding: 8px 12px;
-      color: var(--text-white);
-      font-family: var(--font-mono);
-      font-size: 12px;
-      outline: none;
-    }
-
-    .input-row input:focus { border-color: var(--primary-blue); }
-
-    .input-row button {
-      background: rgba(66, 133, 244, 0.15);
-      color: var(--primary-blue);
-      border: 1px solid var(--primary-blue);
-      padding: 8px 16px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    /* Mobile Layout */
-    @media (max-width: 768px) {
-      .mockup-grid {
-        grid-template-columns: 1fr;
-        overflow-y: auto;
-        height: calc(100vh - 60px);
-      }
-      .video-frame { min-height: 280px; }
-      .hardware-shelf { width: 90vw; }
-      .shelf-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROJECT ANIMUS — Vision & Voice HUD</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+<style>
+:root{--bg:#08080a;--blue:#4285F4;--red:#FF3344;--green:#00FF66;--card:#101114;--line:rgba(66,133,244,.2);--text:#F8FAFC;--dim:#94A3B8;--mono:'Courier New',Courier,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);background-image:radial-gradient(circle at 50% 50%,rgba(66,133,244,.05),transparent 80%),linear-gradient(rgba(255,255,255,.01) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.01) 1px,transparent 1px);background-size:100% 100%,30px 30px,30px 30px;color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden;display:flex;justify-content:center;align-items:center}
+button{font-family:var(--mono);cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+#home{text-align:center;max-width:720px;padding:45px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 0 40px #000e,0 0 20px rgba(66,133,244,.15)}
+.tag{font-family:var(--mono);color:var(--red);font-size:12px;letter-spacing:4px;margin-bottom:12px}
+h1{font-size:36px;font-weight:800;margin-bottom:16px}
+.sub{color:var(--dim);font-size:14px;line-height:1.6;margin-bottom:35px}
+.btn{background:rgba(66,133,244,.12);color:var(--blue);border:1px solid var(--blue);padding:10px 16px;font-size:12px;font-weight:bold;letter-spacing:1px;border-radius:6px}
+.btn:hover{background:var(--blue);color:#fff}
+.btn.big{padding:14px 32px;font-size:14px;letter-spacing:2px}
+.btn.danger{color:var(--red);border-color:var(--red);background:rgba(255,51,68,.1)}
+.btn.danger:hover,.btn.danger.on{background:var(--red);color:#fff}
+.btn.on{background:var(--blue);color:#fff}
+#hud{display:none;width:100vw;height:100vh;flex-direction:column;position:absolute;top:0;left:0}
+nav{height:60px;padding:0 25px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:rgba(16,17,20,.95);border-bottom:1px solid var(--line);z-index:25}
+.brand{font-family:var(--mono);font-size:14px;font-weight:bold;letter-spacing:2px;display:flex;align-items:center;gap:12px}
+.badge{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--blue);padding:4px 12px;border-radius:4px;border:1px solid rgba(66,133,244,.3)}
+.dot{width:7px;height:7px;background:var(--red);border-radius:50%;box-shadow:0 0 8px var(--red)}
+.dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.navr{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.navr .btn{padding:6px 12px}
+#shelf-tab{position:absolute;top:60px;left:50%;transform:translateX(-50%);background:rgba(16,17,20,.95);border:1px solid var(--line);border-top:none;padding:4px 18px;border-radius:0 0 8px 8px;font-size:11px;color:var(--blue);z-index:35}
+#shelf{position:absolute;top:60px;left:50%;transform:translateX(-50%);width:600px;max-width:90vw;background:rgba(16,17,20,.98);border:1px solid var(--line);border-top:none;border-radius:0 0 10px 10px;box-shadow:0 15px 30px #000c;z-index:30;max-height:0;overflow:hidden;padding:0 25px;transition:max-height .4s,padding .4s}
+#shelf.open{max-height:240px;padding:20px 25px;border-color:var(--blue)}
+.shelf-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.sec{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:2px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:4px}
+.stat{font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;justify-content:space-between;margin-bottom:4px}
+.stat span{color:var(--text)}
+#shelf .btn{width:100%;margin-top:10px}
+main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;height:calc(100vh - 60px);overflow:hidden}
+.video,.angles,.voice{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px}
+.video::before,.angles::before,.voice::before,.video::after,.angles::after,.voice::after{content:'';position:absolute;width:12px;height:12px;border:0 solid var(--blue);pointer-events:none;z-index:5}
+.video::before,.angles::before,.voice::before{top:6px;left:6px;border-width:2px 0 0 2px}
+.video::after,.angles::after,.voice::after{bottom:6px;right:6px;border-width:0 2px 2px 0}
+.video{overflow:hidden;display:flex;justify-content:center;align-items:center;box-shadow:0 10px 30px #0008}
+.pill{position:absolute;top:15px;right:15px;background:rgba(8,8,10,.85);border:1px solid var(--red);color:var(--red);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:4px;z-index:10}
+.pill.ok{border-color:var(--green);color:var(--green)}
+#gesture-bar{position:absolute;bottom:15px;left:15px;background:rgba(8,8,10,.85);border:1px solid var(--blue);color:var(--blue);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:4px;z-index:10;display:none}
+video{display:none}
+canvas{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.stack{display:flex;flex-direction:column;gap:20px;height:100%;min-height:0}
+.angles{padding:20px}
+.ctitle{font-family:var(--mono);font-size:13px;color:var(--blue);letter-spacing:2px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:15px}
+.joint{margin-bottom:12px}
+.jl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:4px}
+.jl b{color:var(--blue)}
+.bar{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+.bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--blue),var(--red))}
+.voice{flex:1;padding:20px;display:flex;flex-direction:column;justify-content:space-between;min-height:0;transition:all .3s}
+.voice.sleeping{opacity:.6;border-color:rgba(255,255,255,.1)}
+.voice.live{border-color:var(--red);box-shadow:0 0 30px rgba(255,51,68,.25)}
+.vh{font-family:var(--mono);font-size:13px;color:var(--red);margin-bottom:12px}
+.tbox{font-family:var(--mono);font-size:13px;line-height:1.5;min-height:48px;word-break:break-word}
+.rbox{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--blue);border-top:1px solid var(--line);padding-top:10px;max-height:120px;overflow-y:auto;white-space:pre-wrap}
+.inrow{display:flex;gap:8px;margin-top:15px;border-top:1px solid var(--line);padding-top:12px}
+.inrow input{flex:1;background:rgba(5,5,5,.8);border:1px solid var(--line);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:12px}
+@media(max-width:768px){main{grid-template-columns:1fr;overflow-y:auto}.video{min-height:280px}.shelf-grid{grid-template-columns:1fr}.navr span{display:none}}
+@media(prefers-reduced-motion:no-preference){.dot{animation:p 1.5s infinite}@keyframes p{50%{opacity:.3}}}
+</style>
 </head>
 <body>
+<div id="home">
+  <div class="tag">PROJECT ANIMUS v3</div>
+  <h1>Multimodal Cybernetic Interface</h1>
+  <p class="sub">Hand tracking with real joint angles, live link to the ANIMUS voice core, and Bluetooth output to the robotic hand.</p>
+  <button class="btn big" id="start">LAUNCH HUD</button>
+</div>
 
-  <!-- LANDING HOME SCREEN -->
-  <div id="home-screen">
-    <div class="title-tag">PROJECT ANIMUS v2 • SYSTEM OVERVIEW</div>
-    <h1>Multimodal Cybernetic Interface</h1>
-    <p class="subtitle">
-      Real-time kinematic joint telemetry, low-latency vision processing, and automated voice synthesis module.
-    </p>
-    <button class="launch-btn" id="start-btn">CONNECT ROBOTIC HAND & LAUNCH HUD</button>
+<div id="hud">
+  <nav>
+    <div class="brand">PROJECT ANIMUS v3
+      <div class="badge"><div class="dot" id="core-dot"></div><span id="core-txt">CORE OFFLINE</span></div>
+    </div>
+    <div class="navr">
+      <span id="ticker">FPS 0 | LAT 0ms</span>
+      <span>WAKE: <b style="color:var(--red)">HEY JARVIS / ✌</b></span>
+      <button class="btn" id="mirror" aria-pressed="false">MIRROR: OFF</button>
+      <button class="btn danger" id="estop" aria-pressed="false">E-STOP</button>
+    </div>
+  </nav>
+
+  <button id="shelf-tab">HARDWARE & BLUETOOTH ▾</button>
+  <div id="shelf">
+    <div class="shelf-grid">
+      <div>
+        <div class="sec">BLUETOOTH LINK (BLE)</div>
+        <div class="stat">STATUS: <span id="bt-status" style="color:var(--red)">NOT CONNECTED</span></div>
+        <div class="stat">DEVICE: <span id="bt-device">NONE</span></div>
+        <div class="stat">BATTERY: <span id="bt-batt">--</span></div>
+        <button class="btn" id="bt-btn">CONNECT TO ROBOT ARM</button>
+      </div>
+      <div>
+        <div class="sec">SERVO OUTPUT (LAST SENT)</div>
+        <div class="stat">THUMB: <span id="s-thumb">--</span></div>
+        <div class="stat">INDEX: <span id="s-index">--</span></div>
+        <div class="stat">MIDDLE: <span id="s-middle">--</span></div>
+        <div class="stat">RING: <span id="s-ring">--</span></div>
+        <div class="stat">PINKY: <span id="s-pinky">--</span></div>
+      </div>
+    </div>
   </div>
 
-  <!-- HUD DASHBOARD -->
-  <div id="hud-screen">
-    <header class="top-navbar">
-      <div class="brand-title">
-        <span>PROJECT ANIMUS v2</span>
-        <div class="status-badge">
-          <div class="pulse-dot"></div>
-          CORE ACTIVE
-        </div>
+  <main>
+    <div class="video">
+      <div class="pill" id="bt-pill">[ BT: DISCONNECTED ]</div>
+      <div id="gesture-bar"></div>
+      <video id="webcam" playsinline muted></video>
+      <canvas id="out" width="1280" height="720"></canvas>
+    </div>
+    <div class="stack">
+      <div class="angles">
+        <div class="ctitle">FINGER JOINT ANGLES (0 CLOSED – 180 OPEN)</div>
+        <div id="joints"></div>
       </div>
-      <div id="sys-ticker" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">
-        FPS: <span style="color: var(--primary-blue);">30.0</span> | LATENCY: <span style="color: var(--primary-blue);">12ms</span>
-      </div>
-      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">
-        WAKE WORD: <span style="color: var(--accent-red);">"ANIMUS"</span>
-      </div>
-    </header>
-
-    <!-- HARDWARE SHELF -->
-    <div class="shelf-toggle-tab" id="shelf-toggle">HARDWARE & BLUETOOTH ▾</div>
-    <div class="hardware-shelf" id="hardware-shelf">
-      <div class="shelf-grid">
+      <div class="voice sleeping" id="voice">
         <div>
-          <div class="shelf-section-title">BLUETOOTH LINK</div>
-          <div class="motor-stat">STATUS: <span id="bt-status" style="color: var(--accent-red);">WAITING FOR CONNECTION</span></div>
-          <div class="motor-stat">DEVICE: <span id="bt-device">NONE</span></div>
-          <button class="bt-connect-btn" id="bt-connect-btn">CONNECT TO ROBOT ARM</button>
+          <div class="vh" id="vstatus">ANIMUS: SLEEP (hold ✌ for 3s to wake)</div>
+          <div class="tbox" id="transcript">System sleeping.</div>
+          <div class="rbox" id="reply" hidden></div>
         </div>
-        <div>
-          <div class="shelf-section-title">MOTOR CHARGE & POWER</div>
-          <div class="motor-stat">MOTOR 1 (THUMB): <span id="m1-stat">--</span></div>
-          <div class="motor-stat">MOTOR 2 (INDEX): <span id="m2-stat">--</span></div>
-          <div class="motor-stat">MOTOR 3 (MIDDLE): <span id="m3-stat">--</span></div>
-          <div class="motor-stat">MOTOR 4 (RING): <span id="m4-stat">--</span></div>
-          <div class="motor-stat">MOTOR 5 (PINKY): <span id="m5-stat">--</span></div>
+        <div class="inrow">
+          <input type="text" id="cmd" placeholder="Type a command or question..." autocomplete="off">
+          <button class="btn" id="send">SEND</button>
         </div>
       </div>
     </div>
+  </main>
+</div>
 
-    <main class="mockup-grid">
-      <!-- VIDEO FEED WITH OVERLAY PILL -->
-      <div class="video-frame">
-        <div class="video-hud-overlay" id="hud-bt-pill">[ BT: DISCONNECTED ]</div>
-        <div class="gesture-timer-bar" id="gesture-bar">HOLD PEACE SIGN: 3s</div>
-        <video id="webcam" playsinline></video>
-        <canvas id="output_canvas" width="1280" height="720"></canvas>
-      </div>
+<script>
+const $ = id => document.getElementById(id);
+const NAMES = ['thumb','index','middle','ring','pinky'];
+// landmark triples (a, joint, c) per finger; angle at the middle point
+const JOINTS = {thumb:[2,3,4], index:[5,6,8], middle:[9,10,12], ring:[13,14,16], pinky:[17,18,20]};
+// raw joint angle range (deg) mapped to servo 0..180 -- tune on your own hand
+const RANGE = {thumb:[125,172], index:[70,170], middle:[70,170], ring:[70,170], pinky:[70,170]};
+const SMOOTH = 0.35, SEND_MS = 50, KEEPALIVE_MS = 250;
 
-      <!-- RIGHT TELEMETRY & VOICE STACK -->
-      <div class="right-stack">
-        <div class="angles-card" id="angles-card">
-          <div class="card-title">ANGLES OF EACH SEPARATE FINGER</div>
+NAMES.forEach(n => $('joints').insertAdjacentHTML('beforeend',
+  `<div class="joint"><div class="jl">${n.toUpperCase()} <b id="v-${n}">180°</b></div><div class="bar"><i id="b-${n}"></i></div></div>`));
 
-          <div class="joint-metric">
-            <div class="joint-label">THUMB JOINT <span class="val" id="val-thumb">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-thumb"></div></div>
-          </div>
-          <div class="joint-metric">
-            <div class="joint-label">INDEX FINGER <span class="val" id="val-index">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-index"></div></div>
-          </div>
-          <div class="joint-metric">
-            <div class="joint-label">MIDDLE FINGER <span class="val" id="val-middle">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-middle"></div></div>
-          </div>
-          <div class="joint-metric">
-            <div class="joint-label">RING FINGER <span class="val" id="val-ring">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-ring"></div></div>
-          </div>
-          <div class="joint-metric">
-            <div class="joint-label">PINKY JOINT <span class="val" id="val-pinky">180°</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-pinky"></div></div>
-          </div>
-        </div>
+/* ---------- Python core link (WebSocket) ---------- */
+let ws = null;
+const wsOpen = () => ws && ws.readyState === 1;
+const wsSend = o => { if (wsOpen()) ws.send(JSON.stringify(o)); };
+function connectWS() {
+  ws = new WebSocket('ws://localhost:8765');
+  ws.onopen = () => { $('core-dot').classList.add('ok'); $('core-txt').textContent = 'CORE LINKED'; };
+  ws.onclose = () => { $('core-dot').classList.remove('ok'); $('core-txt').textContent = 'CORE OFFLINE'; setTimeout(connectWS, 1500); };
+  ws.onmessage = e => { try { onCore(JSON.parse(e.data)); } catch {} };
+}
+const STATE_TXT = {idle:'ANIMUS: ONLINE', listening:'ANIMUS: LISTENING…', thinking:'ANIMUS: THINKING…', speaking:'ANIMUS: SPEAKING…'};
+function onCore(m) {
+  if (m.type === 'state') {
+    $('vstatus').textContent = STATE_TXT[m.state] || 'ANIMUS';
+    $('voice').classList.toggle('live', m.state !== 'idle');
+    if (m.state !== 'idle') $('voice').classList.remove('sleeping');
+  } else if (m.type === 'transcript') { $('transcript').textContent = `"${m.text}"`; $('reply').hidden = true; }
+  else if (m.type === 'reply') { $('reply').hidden = false; $('reply').textContent = m.text; }
+  else if (m.type === 'estop') setEstop(true);
+  else if (m.type === 'hand_command') applyCommandPose(m.angles);
+}
 
-        <div class="voice-card sleeping" id="voice-card">
-          <div>
-            <div class="voice-header">
-              <div class="voice-wave">
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-              </div>
-              <span id="voice-status-title">ANIMUS: SLEEP MODE (Hold Peace Sign 3s to Wake)</span>
-            </div>
-            <div class="transcript-box" id="transcript-display">
-              System sleeping. Use ✌️ gesture for 3 seconds or say "ANIMUS" to wake up.
-            </div>
-            <div class="reply-box" id="reply-display" style="display: none;"></div>
-          </div>
+/* ---------- Bluetooth LE (Nordic UART style) ---------- */
+const NUS = '6e400001-b5a0-f393-e0a9-e50e24dcca9e', NUS_RX = '6e400002-b5a0-f393-e0a9-e50e24dcca9e';
+let bleDev = null, bleChar = null, bleBusy = false, estop = false, mirror = false;
+const enc = new TextEncoder();
+async function bleWrite(str) {            // payload must stay <= 20 bytes
+  if (!bleChar || bleBusy) return;
+  bleBusy = true;
+  try { await bleChar.writeValueWithoutResponse(enc.encode(str)); } catch (e) { console.warn('BLE write', e); }
+  bleBusy = false;
+}
+function setBt(ok, name = 'NONE') {
+  $('bt-status').textContent = ok ? 'CONNECTED' : 'NOT CONNECTED';
+  $('bt-status').style.color = ok ? 'var(--green)' : 'var(--red)';
+  $('bt-device').textContent = name;
+  $('bt-btn').textContent = ok ? 'DISCONNECT' : 'CONNECT TO ROBOT ARM';
+  $('bt-pill').textContent = ok ? '[ BT: LINKED ]' : '[ BT: DISCONNECTED ]';
+  $('bt-pill').classList.toggle('ok', ok);
+  if (!ok) { bleChar = null; $('bt-batt').textContent = '--'; }
+}
+$('bt-btn').onclick = async () => {
+  if (bleDev && bleDev.gatt.connected) { bleDev.gatt.disconnect(); return; }
+  if (!navigator.bluetooth) return alert('Web Bluetooth is not supported in this browser.');
+  try {
+    $('bt-status').textContent = 'PAIRING…';
+    bleDev = await navigator.bluetooth.requestDevice({acceptAllDevices: true, optionalServices: [NUS, 'battery_service']});
+    bleDev.addEventListener('gattserverdisconnected', () => setBt(false));
+    const server = await bleDev.gatt.connect();
+    bleChar = await (await server.getPrimaryService(NUS)).getCharacteristic(NUS_RX);
+    setBt(true, bleDev.name || 'ANIMUS_ARM');
+    try {
+      const b = await (await server.getPrimaryService('battery_service')).getCharacteristic('battery_level');
+      $('bt-batt').textContent = (await b.readValue()).getUint8(0) + '%';
+    } catch {}
+  } catch (e) { console.warn(e); setBt(false); $('bt-status').textContent = 'CONNECTION FAILED'; }
+};
 
-          <div class="input-row">
-            <input type="text" id="command-input" placeholder="Type query or command (e.g. calibrate, reset)..." />
-            <button id="send-btn">SEND</button>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
+/* ---------- Output to arm: smoothing, rate limit, keepalive, e-stop ---------- */
+const smooth = {thumb:180, index:180, middle:180, ring:180, pinky:180};
+let lastSent = null, lastSentAt = 0, overrideUntil = 0;
+function emit(angles) {
+  const now = performance.now();
+  if (estop || !bleChar || now - lastSentAt < SEND_MS) return;
+  const changed = !lastSent || NAMES.some(n => Math.abs(angles[n] - lastSent[n]) > 1);
+  if (!changed && now - lastSentAt < KEEPALIVE_MS) return;
+  lastSent = {...angles}; lastSentAt = now;
+  bleWrite(NAMES.map(n => Math.round(angles[n])).join(',') + '\n');
+  NAMES.forEach(n => $('s-' + n).textContent = Math.round(angles[n]) + '°');
+  wsSend({type: 'robot_hand_angles', data: angles});
+}
+function applyCommandPose(angles) {       // pose requested by voice
+  if (estop) return;
+  overrideUntil = performance.now() + 2500;
+  NAMES.forEach(n => smooth[n] = angles[n]);
+  lastSentAt = 0; emit(smooth);
+}
+function setEstop(on) {
+  estop = on;
+  $('estop').classList.toggle('on', on);
+  $('estop').setAttribute('aria-pressed', on);
+  $('estop').textContent = on ? 'RESUME' : 'E-STOP';
+  if (on) { bleBusy = false; bleWrite('STOP\n'); }   // firmware should halt on STOP and on a missed keepalive
+}
+$('estop').onclick = () => setEstop(!estop);
+$('mirror').onclick = () => {
+  mirror = !mirror;
+  $('mirror').textContent = 'MIRROR: ' + (mirror ? 'ON' : 'OFF');
+  $('mirror').classList.toggle('on', mirror);
+  $('mirror').setAttribute('aria-pressed', mirror);
+};
+$('shelf-tab').onclick = () => {
+  const open = $('shelf').classList.toggle('open');
+  $('shelf-tab').textContent = 'HARDWARE & BLUETOOTH ' + (open ? '▴' : '▾');
+};
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const shelfToggle = document.getElementById('shelf-toggle');
-      const hardwareShelf = document.getElementById('hardware-shelf');
-      shelfToggle.addEventListener('click', () => {
-        hardwareShelf.classList.toggle('open');
-        shelfToggle.innerText = hardwareShelf.classList.contains('open') ? 'HARDWARE & BLUETOOTH ▴' : 'HARDWARE & BLUETOOTH ▾';
+/* ---------- Wake / sleep UI ---------- */
+let awake = false;
+function setAwake(on) {
+  awake = on;
+  $('voice').classList.toggle('sleeping', !on);
+  $('voice').classList.toggle('live', on);
+  $('vstatus').textContent = on ? 'ANIMUS: ONLINE' : 'ANIMUS: SLEEP (hold ✌ for 3s to wake)';
+  $('transcript').textContent = on ? 'ANIMUS is awake. Speak or type below.' : 'System sleeping.';
+  wsSend({type: on ? 'wake' : 'sleep'});
+}
+
+/* ---------- Typed commands ---------- */
+function localReply(q) {                  // fallback when the Python core is offline
+  q = q.toLowerCase();
+  if (/status|system/.test(q)) return 'HUD running. Python core is offline.';
+  if (/calibrate/.test(q)) return 'Hold your hand steady in view.';
+  return 'Python core is offline, so I can only run basic HUD commands.';
+}
+function submit() {
+  const q = $('cmd').value.trim();
+  if (!q) return;
+  $('cmd').value = '';
+  $('transcript').textContent = `"${q}"`;
+  $('voice').classList.remove('sleeping');
+  if (wsOpen()) wsSend({type: 'text_command', text: q});
+  else { $('reply').hidden = false; $('reply').textContent = localReply(q); }
+}
+$('send').onclick = submit;
+$('cmd').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+
+/* ---------- Vision ---------- */
+const ang3 = (a, b, c) => {
+  const v = [a.x-b.x, a.y-b.y, a.z-b.z], w = [c.x-b.x, c.y-b.y, c.z-b.z];
+  const m = Math.hypot(...v) * Math.hypot(...w);
+  return m ? Math.acos(Math.max(-1, Math.min(1, (v[0]*w[0] + v[1]*w[1] + v[2]*w[2]) / m))) * 180 / Math.PI : 180;
+};
+const holds = {};
+function hold(key, active, ms, done) {    // returns 0..1 progress, fires done() at 1
+  if (!active) { holds[key] = null; return 0; }
+  const now = performance.now();
+  holds[key] ??= now;
+  const p = (now - holds[key]) / ms;
+  if (p >= 1) { holds[key] = null; done(); return 1; }
+  return p;
+}
+
+$('start').onclick = async () => {
+  $('home').style.display = 'none';
+  $('hud').style.display = 'flex';
+  connectWS();
+  try {
+    if (typeof Hands === 'undefined') throw new Error('MediaPipe failed to load from the CDN. Check your network.');
+    const video = $('webcam'), canvas = $('out'), ctx = canvas.getContext('2d');
+    video.srcObject = await navigator.mediaDevices.getUserMedia({
+      video: {width: {ideal: 1280}, height: {ideal: 720}, frameRate: {ideal: 30}}, audio: false});
+    await new Promise(r => { video.onloadedmetadata = () => video.play().then(r, r); });
+
+    const hands = new Hands({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
+    hands.setOptions({maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
+
+    let frames = 0, latSum = 0, sendStart = 0;
+    setInterval(() => {
+      $('ticker').textContent = `FPS ${frames} | LAT ${frames ? Math.round(latSum / frames) : 0}ms`;
+      frames = 0; latSum = 0;
+    }, 1000);
+
+    hands.onResults(res => {
+      frames++; latSum += performance.now() - sendStart;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (res.image) ctx.drawImage(res.image, 0, 0, canvas.width, canvas.height);
+      const lm = res.multiHandLandmarks && res.multiHandLandmarks[0];
+      if (!lm) { hold('peace', false); hold('fist', false); $('gesture-bar').style.display = 'none'; return; }
+      drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#4285F4', lineWidth: 3});
+      drawLandmarks(ctx, lm, {color: '#FF3344', fillColor: '#FFFFFF', radius: 4});
+
+      // metric 3D landmarks avoid the 16:9 distortion; fall back to image landmarks scaled by aspect
+      const wl = res.multiHandWorldLandmarks && res.multiHandWorldLandmarks[0];
+      const asp = video.videoHeight / video.videoWidth || 9 / 16;
+      const P = wl || lm.map(p => ({x: p.x, y: p.y * asp, z: p.z}));
+
+      const target = {};
+      NAMES.forEach(n => {
+        const [a, b, c] = JOINTS[n], [lo, hi] = RANGE[n];
+        const t = Math.max(0, Math.min(1, (ang3(P[a], P[b], P[c]) - lo) / (hi - lo)));
+        target[n] = t * 180;
+        smooth[n] = smooth[n] * (1 - SMOOTH) + target[n] * SMOOTH;
+        $('v-' + n).textContent = Math.round(smooth[n]) + '°';
+        $('b-' + n).style.width = (smooth[n] / 180 * 100) + '%';
       });
 
-      const btConnectBtn = document.getElementById('bt-connect-btn');
-      const btStatus = document.getElementById('bt-status');
-      const btDevice = document.getElementById('bt-device');
-      const hudBtPill = document.getElementById('hud-bt-pill');
+      const open = n => smooth[n] > 120, closed = n => smooth[n] < 60;
+      const peace = open('index') && open('middle') && closed('ring') && closed('pinky');
+      const fist = NAMES.every(closed);
 
-      btConnectBtn.addEventListener('click', async () => {
-        try {
-          if (!navigator.bluetooth) {
-            alert('Web Bluetooth is not supported on this browser.');
-            return;
-          }
-          btStatus.innerText = 'PAIRING...';
-          const device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: ['battery_service']
-          });
-          
-          btDevice.innerText = device.name || 'ANIMUS_ARM';
-          btStatus.innerText = 'CONNECTED';
-          btStatus.style.color = '#00FF66';
-          btConnectBtn.innerText = 'DISCONNECT';
+      const pp = hold('peace', peace && !awake, 3000, () => setAwake(true));
+      hold('fist', fist && awake && !mirror, 1500, () => setAwake(false));
+      $('gesture-bar').style.display = pp > 0 ? 'block' : 'none';
+      $('gesture-bar').textContent = `HOLD ✌ TO WAKE: ${(pp * 3).toFixed(1)}s / 3.0s`;
 
-          hudBtPill.innerText = '[ BT: LINKED ]';
-          hudBtPill.classList.add('connected');
-
-          document.getElementById('m1-stat').innerText = '4.1V [88%]';
-          document.getElementById('m2-stat').innerText = '4.0V [84%]';
-          document.getElementById('m3-stat').innerText = '4.2V [91%]';
-          document.getElementById('m4-stat').innerText = '3.9V [79%]';
-          document.getElementById('m5-stat').innerText = '4.1V [87%]';
-        } catch (err) {
-          console.warn('Bluetooth connection cancelled or failed:', err);
-          btStatus.innerText = 'CONNECTION FAILED';
-        }
-      });
-
-      const startBtn = document.getElementById('start-btn');
-      startBtn.addEventListener('click', async () => {
-        try {
-          document.getElementById('home-screen').style.display = 'none';
-          document.getElementById('hud-screen').style.display = 'flex';
-
-          const videoElement = document.getElementById('webcam');
-          const canvasElement = document.getElementById('output_canvas');
-          const canvasCtx = canvasElement.getContext('2d');
-
-          if (typeof Hands === 'undefined') {
-            alert('MediaPipe failed to load from CDN. Please check your network firewall.');
-            return;
-          }
-
-          // Request high-definition 720p stream
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }, 
-            audio: false 
-          });
-          videoElement.srcObject = stream;
-          
-          // Wait for video metadata to load cleanly before starting MediaPipe loop
-          await new Promise((resolve) => {
-            videoElement.onloadedmetadata = () => {
-              videoElement.play().then(resolve).catch(resolve);
-            };
-          });
-
-          const hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-          });
-
-          hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 0,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-          });
-
-          let peaceGestureStartTime = null;
-          const gestureBar = document.getElementById('gesture-bar');
-          const voiceCard = document.getElementById('voice-card');
-          const statusTitle = document.getElementById('voice-status-title');
-          const transcriptEl = document.getElementById('transcript-display');
-
-          let isAnimusAwake = false;
-
-          function wakeAnimus() {
-            isAnimusAwake = true;
-            voiceCard.classList.remove('sleeping');
-            voiceCard.classList.add('active-listen');
-            statusTitle.innerText = 'ANIMUS ENGINE: ONLINE & LISTENING';
-            transcriptEl.innerText = 'ANIMUS is awake. Say command or type query below.';
-            const utterance = new SpeechSynthesisUtterance("ANIMUS online. Ready for input.");
-            window.speechSynthesis.speak(utterance);
-          }
-
-          function sleepAnimus() {
-            isAnimusAwake = false;
-            voiceCard.classList.add('sleeping');
-            voiceCard.classList.remove('active-listen');
-            statusTitle.innerText = 'ANIMUS: SLEEP MODE (Hold Peace Sign 3s to Wake)';
-            transcriptEl.innerText = 'System sleeping. Use ✌️ gesture for 3 seconds to wake up.';
-          }
-
-          hands.onResults((results) => {
-            canvasCtx.save();
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            if (results.image) {
-              canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-            }
-
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-              const landmarks = results.multiHandLandmarks[0];
-              drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#4285F4', lineWidth: 3 });
-              drawLandmarks(canvasCtx, landmarks, { color: '#FF3344', fillColor: '#FFFFFF', radius: 4 });
-
-              const wrist = landmarks[0];
-              const tips = [4, 8, 12, 16, 20];
-              const names = ['thumb', 'index', 'middle', 'ring', 'pinky'];
-
-              const dists = tips.map(t => Math.hypot(landmarks[t].x - wrist.x, landmarks[t].y - wrist.y));
-
-              tips.forEach((tipIdx, i) => {
-                let angle = Math.round(Math.min(180, Math.max(0, (dists[i] / 0.5) * 180)));
-                document.getElementById(`val-${names[i]}`).innerText = `${angle}°`;
-                document.getElementById(`bar-${names[i]}`).style.width = `${(angle / 180) * 100}%`;
-              });
-
-              const isIndexOpen = dists[1] > 0.35;
-              const isMiddleOpen = dists[2] > 0.35;
-              const isRingClosed = dists[3] < 0.28;
-              const isPinkyClosed = dists[4] < 0.28;
-
-              const isPeaceSign = isIndexOpen && isMiddleOpen && isRingClosed && isPinkyClosed;
-              const isFist = dists.every(d => d < 0.25);
-
-              if (isFist) {
-                sleepAnimus();
-              }
-
-              if (isPeaceSign) {
-                if (!peaceGestureStartTime) peaceGestureStartTime = Date.now();
-                const elapsed = ((Date.now() - peaceGestureStartTime) / 1000).toFixed(1);
-                
-                gestureBar.style.display = 'block';
-                gestureBar.innerText = `HOLD PEACE SIGN: ${elapsed}s / 3.0s`;
-
-                if (elapsed >= 3.0 && !isAnimusAwake) {
-                  wakeAnimus();
-                  peaceGestureStartTime = null;
-                  gestureBar.style.display = 'none';
-                }
-              } else {
-                peaceGestureStartTime = null;
-                gestureBar.style.display = 'none';
-              }
-            }
-            canvasCtx.restore();
-          });
-
-          let lastTime = 0;
-          const fpsInterval = 1000 / 30;
-
-          async function processFrame(timestamp) {
-            if (!lastTime) lastTime = timestamp;
-            const elapsed = timestamp - lastTime;
-
-            if (elapsed >= fpsInterval) {
-              lastTime = timestamp - (elapsed % fpsInterval);
-              if (videoElement.readyState >= 2 && !videoElement.paused && !videoElement.ended) {
-                try { await hands.send({ image: videoElement }); } catch (e) {}
-              }
-            }
-            requestAnimationFrame(processFrame);
-          }
-          requestAnimationFrame(processFrame);
-
-          const replyEl = document.getElementById('reply-display');
-          const commandInput = document.getElementById('command-input');
-          const sendBtn = document.getElementById('send-btn');
-          let isProcessing = false;
-
-          function processCommandQuery(rawText) {
-            const q = rawText.toLowerCase().trim();
-            if (q.includes('calibrate') || q.includes('calibration')) {
-              return "Entering sensor calibration mode. Please hold hand steady.";
-            } else if (q.includes('reset')) {
-              return "Telemetry baselines reset to zero.";
-            } else if (q.includes('stop') || q.includes('emergency')) {
-              return "Emergency stop executed. All hardware outputs halted.";
-            } else if (q.includes('status') || q.includes('system')) {
-              return "All telemetry channels operational.";
-            } else if (q.includes('who are you') || q.includes('name')) {
-              return "I am ANIMUS, your cybernetic voice and vision assistant.";
-            } else {
-              return `Command processed successfully for: "${rawText}".`;
-            }
-          }
-
-          function typeWriterEffect(text, element, callback) {
-            element.innerHTML = 'ANIMUS: "';
-            let i = 0;
-            function type() {
-              if (i < text.length) {
-                element.innerHTML += text.charAt(i);
-                i++;
-                setTimeout(type, 20);
-              } else {
-                element.innerHTML += '"';
-                if (callback) callback();
-              }
-            }
-            type();
-          }
-
-          function executeAssistantResponse(queryText) {
-            if (isProcessing) return;
-            isProcessing = true;
-
-            wakeAnimus();
-            transcriptEl.innerText = `"${queryText}"`;
-            const replyText = processCommandQuery(queryText);
-            replyEl.style.display = 'block';
-
-            typeWriterEffect(replyText, replyEl, () => {
-              const utterance = new SpeechSynthesisUtterance(replyText);
-              utterance.onend = () => {
-                setTimeout(() => {
-                  replyEl.style.display = 'none';
-                  isProcessing = false;
-                }, 2500);
-              };
-              window.speechSynthesis.speak(utterance);
-            });
-          }
-
-          sendBtn.addEventListener('click', () => {
-            const val = commandInput.value.trim();
-            if (val) { commandInput.value = ''; executeAssistantResponse(val); }
-          });
-
-          commandInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-              const val = commandInput.value.trim();
-              if (val) { commandInput.value = ''; executeAssistantResponse(val); }
-            }
-          });
-
-          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-          if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
-
-            recognition.onresult = (event) => {
-              if (isProcessing) return;
-              let text = event.results[event.results.length - 1][0].transcript.trim();
-
-              if (text.toLowerCase().includes('animus')) {
-                const cleanQuery = text.toLowerCase().replace('animus', '').trim();
-                if (cleanQuery.length > 2) {
-                  executeAssistantResponse(cleanQuery);
-                } else {
-                  wakeAnimus();
-                }
-              }
-            };
-
-            recognition.onerror = () => {};
-            recognition.onend = () => {
-              setTimeout(() => { try { recognition.start(); } catch(e) {} }, 1000);
-            };
-
-            try { recognition.start(); } catch(e) {}
-          }
-        } catch (err) {
-          console.error("Launch error:", err);
-          alert("Failed to initialize HUD: " + err.message);
-          document.getElementById('home-screen').style.display = 'block';
-          document.getElementById('hud-screen').style.display = 'none';
-        }
-      });
+      if (mirror && performance.now() > overrideUntil) emit(smooth);
     });
-  </script>
+
+    let last = 0;
+    const loop = async t => {
+      if (t - last >= 1000 / 30 && video.readyState >= 2) {
+        last = t; sendStart = performance.now();
+        try { await hands.send({image: video}); } catch (e) { console.warn(e); }
+      }
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  } catch (err) {
+    console.error(err);
+    alert('Failed to initialize HUD: ' + err.message);
+    $('home').style.display = 'block';
+    $('hud').style.display = 'none';
+  }
+};
+</script>
 </body>
 </html>
