@@ -8,8 +8,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
 <style>
-:root{--bg:#08080a;--blue:#4285F4;--red:#FF3344;--green:#00FF66;--card:#101114;--line:rgba(66,133,244,.2);--text:#F8FAFC;--dim:#94A3B8;--mono:'Courier New',Courier,monospace}
+:root{--bg:#08080a;--blue:#4285F4;--red:#FF3344;--green:#00FF66;--amber:#FFB020;--card:#101114;--line:rgba(66,133,244,.2);--text:#F8FAFC;--dim:#94A3B8;--mono:'Courier New',Courier,monospace}
 *{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
 body{background:var(--bg);background-image:radial-gradient(circle at 50% 50%,rgba(66,133,244,.05),transparent 80%),linear-gradient(rgba(255,255,255,.01) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.01) 1px,transparent 1px);background-size:100% 100%,30px 30px,30px 30px;color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden;display:flex;justify-content:center;align-items:center}
 button{font-family:var(--mono);cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
@@ -18,7 +19,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 h1{font-size:36px;font-weight:800;margin-bottom:16px}
 .sub{color:var(--dim);font-size:14px;line-height:1.6;margin-bottom:35px}
 .btn{background:rgba(66,133,244,.12);color:var(--blue);border:1px solid var(--blue);padding:10px 16px;font-size:12px;font-weight:bold;letter-spacing:1px;border-radius:6px}
-.btn:hover{background:var(--blue);color:#fff}
+.btn:hover:not(:disabled){background:var(--blue);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.big{padding:14px 32px;font-size:14px;letter-spacing:2px}
 .btn.danger{color:var(--red);border-color:var(--red);background:rgba(255,51,68,.1)}
 .btn.danger:hover,.btn.danger.on{background:var(--red);color:#fff}
@@ -29,8 +31,11 @@ nav{height:60px;padding:0 25px;display:flex;justify-content:space-between;align-
 .badge{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--blue);padding:4px 12px;border-radius:4px;border:1px solid rgba(66,133,244,.3)}
 .dot{width:7px;height:7px;background:var(--red);border-radius:50%;box-shadow:0 0 8px var(--red)}
 .dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
-.navr{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.navr{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11px;color:var(--dim)}
 .navr .btn{padding:6px 12px}
+.spark{display:flex;align-items:center;gap:8px}
+#spark{width:140px;height:30px;border:1px solid var(--line);border-radius:4px;background:rgba(5,5,5,.6)}
+#ticker{white-space:pre;line-height:1.35;text-align:left;min-width:150px}
 #shelf-tab{position:absolute;top:60px;left:50%;transform:translateX(-50%);background:rgba(16,17,20,.95);border:1px solid var(--line);border-top:none;padding:4px 18px;border-radius:0 0 8px 8px;font-size:11px;color:var(--blue);z-index:35}
 #shelf{position:absolute;top:60px;left:50%;transform:translateX(-50%);width:600px;max-width:90vw;background:rgba(16,17,20,.98);border:1px solid var(--line);border-top:none;border-radius:0 0 10px 10px;box-shadow:0 15px 30px #000c;z-index:30;max-height:0;overflow:hidden;padding:0 25px;transition:max-height .4s,padding .4s}
 #shelf.open{max-height:240px;padding:20px 25px;border-color:var(--blue)}
@@ -47,9 +52,12 @@ main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;hei
 .video{overflow:hidden;display:flex;justify-content:center;align-items:center;box-shadow:0 10px 30px #0008}
 .pill{position:absolute;top:15px;right:15px;background:rgba(8,8,10,.85);border:1px solid var(--red);color:var(--red);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:4px;z-index:10}
 .pill.ok{border-color:var(--green);color:var(--green)}
-#gesture-bar{position:absolute;bottom:15px;left:15px;background:rgba(8,8,10,.85);border:1px solid var(--blue);color:var(--blue);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:4px;z-index:10;display:none}
+#banner{position:absolute;top:15px;left:15px;background:rgba(8,8,10,.9);border:1px solid var(--amber);color:var(--amber);font-family:var(--mono);font-size:12px;font-weight:bold;padding:6px 12px;border-radius:4px;z-index:10}
+#banner.red{border-color:var(--red);color:var(--red)}
+#gesture-bar{position:absolute;bottom:15px;left:15px;background:rgba(8,8,10,.85);border:1px solid var(--blue);color:var(--blue);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:4px;z-index:10}
 video{display:none}
-canvas{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#out{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#ghost{position:absolute;right:15px;bottom:15px;width:150px;height:170px;background:rgba(8,8,10,.8);border:1px solid var(--line);border-radius:8px;z-index:10}
 .stack{display:flex;flex-direction:column;gap:20px;height:100%;min-height:0}
 .angles{padding:20px}
 .ctitle{font-family:var(--mono);font-size:13px;color:var(--blue);letter-spacing:2px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:15px}
@@ -58,33 +66,43 @@ canvas{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
 .jl b{color:var(--blue)}
 .bar{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
 .bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--blue),var(--red))}
+.legend{font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.7;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+.ctl{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:8px}
+.ctl input{accent-color:var(--blue);width:100%}
+.ctl b{color:var(--blue);text-align:right}
 .voice{flex:1;padding:20px;display:flex;flex-direction:column;justify-content:space-between;min-height:0;transition:all .3s}
 .voice.sleeping{opacity:.6;border-color:rgba(255,255,255,.1)}
 .voice.live{border-color:var(--red);box-shadow:0 0 30px rgba(255,51,68,.25)}
+.voice.locked{opacity:.4;border-color:var(--amber);box-shadow:none}
 .vh{font-family:var(--mono);font-size:13px;color:var(--red);margin-bottom:12px}
 .tbox{font-family:var(--mono);font-size:13px;line-height:1.5;min-height:48px;word-break:break-word}
 .rbox{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--blue);border-top:1px solid var(--line);padding-top:10px;max-height:120px;overflow-y:auto;white-space:pre-wrap}
 .inrow{display:flex;gap:8px;margin-top:15px;border-top:1px solid var(--line);padding-top:12px}
 .inrow input{flex:1;background:rgba(5,5,5,.8);border:1px solid var(--line);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:12px}
-@media(max-width:768px){main{grid-template-columns:1fr;overflow-y:auto}.video{min-height:280px}.shelf-grid{grid-template-columns:1fr}.navr span{display:none}}
-@media(prefers-reduced-motion:no-preference){.dot{animation:p 1.5s infinite}@keyframes p{50%{opacity:.3}}}
+#attract{position:absolute;inset:60px 0 0 0;z-index:20;background:rgba(8,8,10,.62);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;pointer-events:none;text-align:center;padding:20px}
+#attract h2{font-family:var(--mono);font-size:clamp(18px,3.2vw,42px);letter-spacing:3px;padding:18px 28px;border:2px solid var(--red);border-radius:8px;background:rgba(8,8,10,.88)}
+.slide{min-width:min(440px,86vw);background:rgba(16,17,20,.94);border:1px solid var(--blue);border-radius:12px;padding:20px 26px;font-family:var(--mono);text-align:left;transition:opacity .35s}
+.slide b{display:block;color:var(--blue);letter-spacing:2px;margin-bottom:10px}
+.slide pre{white-space:pre-wrap;font:inherit;font-size:14px;line-height:1.7}
+@media(max-width:768px){main{grid-template-columns:1fr;overflow-y:auto}.video{min-height:280px}.shelf-grid{grid-template-columns:1fr}.navr span,#spark{display:none}}
+@media(prefers-reduced-motion:no-preference){.dot{animation:p 1.5s infinite}#attract h2{animation:p 2.4s infinite}@keyframes p{50%{opacity:.45}}}
 </style>
 </head>
 <body>
 <div id="home">
-  <div class="tag">PROJECT ANIMUS v3</div>
+  <div class="tag">PROJECT ANIMUS v3.2</div>
   <h1>Multimodal Cybernetic Interface</h1>
-  <p class="sub">Hand tracking with real joint angles, live link to the ANIMUS voice core, and Bluetooth output to the robotic hand.</p>
+  <p class="sub">Hand-gesture control, live link to the ANIMUS voice core, and Bluetooth output to the robotic hand.</p>
   <button class="btn big" id="start">LAUNCH HUD</button>
 </div>
 
 <div id="hud">
   <nav>
-    <div class="brand">PROJECT ANIMUS v3
+    <div class="brand">PROJECT ANIMUS v3.2
       <div class="badge"><div class="dot" id="core-dot"></div><span id="core-txt">CORE OFFLINE</span></div>
     </div>
     <div class="navr">
-      <span id="ticker">FPS 0 | LAT 0ms</span>
+      <div class="spark"><canvas id="spark" width="280" height="60" aria-label="Latency history, last 60 samples"></canvas><span id="ticker">FPS 0 | LAT 0ms</span></div>
       <span>WAKE: <b style="color:var(--red)">HEY JARVIS / ✌</b></span>
       <button class="btn" id="mirror" aria-pressed="false">MIRROR: OFF</button>
       <button class="btn danger" id="estop" aria-pressed="false">E-STOP</button>
@@ -115,14 +133,19 @@ canvas{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
   <main>
     <div class="video">
       <div class="pill" id="bt-pill">[ BT: DISCONNECTED ]</div>
-      <div id="gesture-bar"></div>
+      <div id="banner" hidden></div>
+      <div id="gesture-bar" hidden></div>
       <video id="webcam" playsinline muted></video>
       <canvas id="out" width="1280" height="720"></canvas>
+      <canvas id="ghost" width="300" height="340" aria-label="Ghost hand: filtered servo output"></canvas>
     </div>
     <div class="stack">
       <div class="angles">
         <div class="ctitle">FINGER JOINT ANGLES (0 CLOSED – 180 OPEN)</div>
         <div id="joints"></div>
+        <div class="ctl"><label for="sens">SENSITIVITY</label><input type="range" id="sens" min="1" max="10" step="1" value="5"><b id="sens-v">1.0×</b></div>
+        <div class="ctl"><label for="smo">SMOOTHING</label><input type="range" id="smo" min="0" max="90" step="5" value="65"><b id="smo-v">65%</b></div>
+        <div class="legend">✌ hold 3s: wake / unlock &nbsp;·&nbsp; ✋ hold 3s: lock<br>✊ e-stop (instant) &nbsp;·&nbsp; 👍 mirror on &nbsp;·&nbsp; 👎 mirror off</div>
       </div>
       <div class="voice sleeping" id="voice">
         <div>
@@ -137,51 +160,172 @@ canvas{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
       </div>
     </div>
   </main>
+
+  <div id="attract" hidden>
+    <h2>IDLE DEMO — SHOW HAND TO TAKE CONTROL</h2>
+    <div class="slide" id="slide"><b id="slide-title"></b><pre id="slide-body"></pre></div>
+  </div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
 const NAMES = ['thumb','index','middle','ring','pinky'];
-// landmark triples (a, joint, c) per finger; angle at the middle point
 const JOINTS = {thumb:[2,3,4], index:[5,6,8], middle:[9,10,12], ring:[13,14,16], pinky:[17,18,20]};
-// raw joint angle range (deg) mapped to servo 0..180 -- tune on your own hand
-const RANGE = {thumb:[125,172], index:[70,170], middle:[70,170], ring:[70,170], pinky:[70,170]};
-const SMOOTH = 0.35, SEND_MS = 50, KEEPALIVE_MS = 250;
+const RANGE = {thumb:[125,172], index:[70,170], middle:[70,170], ring:[70,170], pinky:[70,170]}; // tune on your hand
+const SEND_MS = 50, KEEPALIVE_MS = 250;
+const ATTRACT_MS = 30000;          // no hand + asleep this long -> idle demo
+const AUTO_SLEEP_MS = 60000;       // awake but idle this long -> sleep (0 disables)
+const FIST_ESTOP_IN_MIRROR = true; // false lets a fist close the arm while mirroring instead of e-stopping
+const SLEEP_POSE = 0;              // pose the sleep/lock animation ends in (0 closed, 180 open)
+const SLEEP_MOVES_ARM = true;      // false = animation only moves the on-screen hand
+const LAT_TARGET_MS = 100, HIST = 60;
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('animus.' + k); return v === null ? d : v; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('animus.' + k, v); } catch {} }
+};
 
 NAMES.forEach(n => $('joints').insertAdjacentHTML('beforeend',
   `<div class="joint"><div class="jl">${n.toUpperCase()} <b id="v-${n}">180°</b></div><div class="bar"><i id="b-${n}"></i></div></div>`));
 
-/* ---------- Python core link (WebSocket) ---------- */
+/* ---------- state ---------- */
+let awake = false, estop = false, mirror = false, attract = false, animating = false;
+let locked = store.get('locked', '0') === '1';
+let sens = +store.get('sens', 5), smoothPct = +store.get('smo', 65), gain = 1, alpha = 0.35;
+const smooth = {thumb:180, index:180, middle:180, ring:180, pinky:180};   // filtered output (what the arm gets)
+const raw = {...smooth};                                                  // unfiltered tracking (for the ghost overlay)
+const stats = {fps: 0, lat: 0, msgs: 0};
+const latHist = [], linkHist = [];
+let latSrc = 'VISION', lastHandAt = 0;
+const t0 = performance.now();
+let lastActive = performance.now();
+const sparkCtx = $('spark').getContext('2d'), ghostCtx = $('ghost').getContext('2d');
+
+function applySliders() {
+  gain = Math.pow(2, (sens - 5) / 4);     // 1..10 -> 0.5x..2.4x, 5 = 1.0x
+  alpha = 1 - smoothPct / 100;            // 0% smoothing = raw, 90% = very smooth
+  $('sens-v').textContent = gain.toFixed(1) + '×';
+  $('smo-v').textContent = smoothPct + '%';
+}
+$('sens').value = sens; $('smo').value = smoothPct; applySliders();
+$('sens').oninput = e => { sens = +e.target.value; store.set('sens', sens); applySliders(); };
+$('smo').oninput = e => { smoothPct = +e.target.value; store.set('smo', smoothPct); applySliders(); };
+
+function paintJoints() {
+  NAMES.forEach(n => {
+    $('v-' + n).textContent = Math.round(smooth[n]) + '°';
+    $('b-' + n).style.width = (smooth[n] / 180 * 100) + '%';
+  });
+  drawGhost();
+}
+function banner() {
+  const t = estop ? 'E-STOP ACTIVE — PRESS RESUME' : locked ? 'LOCKED — HOLD ✌ 3s TO UNLOCK' : '';
+  $('banner').hidden = !t; $('banner').textContent = t;
+  $('banner').classList.toggle('red', estop);
+  drawGhost();
+}
+
+/* ---------- latency sparkline + link stats ---------- */
+function pushLat(v, src) { latHist.push(v); if (latHist.length > HIST) latHist.shift(); latSrc = src; }
+function pushLink(ok) { linkHist.push(ok ? 1 : 0); if (linkHist.length > HIST) linkHist.shift(); }
+function drawSpark() {
+  const c = sparkCtx, W = 140, H = 30;
+  c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, W, H);
+  const ymax = Math.max(LAT_TARGET_MS * 1.5, ...latHist);
+  const y = v => H - 2 - Math.min(v, ymax) / ymax * (H - 4);
+  c.strokeStyle = 'rgba(148,163,184,.6)'; c.lineWidth = 1; c.setLineDash([3, 3]);
+  c.beginPath(); c.moveTo(0, y(LAT_TARGET_MS)); c.lineTo(W, y(LAT_TARGET_MS)); c.stroke(); c.setLineDash([]);
+  if (latHist.length < 2) return;
+  c.strokeStyle = latHist[latHist.length - 1] > LAT_TARGET_MS ? '#FF3344' : '#00FF66'; c.lineWidth = 1.5;
+  c.beginPath();
+  latHist.forEach((v, i) => { const x = W - (latHist.length - 1 - i) / (HIST - 1) * W; i ? c.lineTo(x, y(v)) : c.moveTo(x, y(v)); });
+  c.stroke();
+}
+function updateTicker() {
+  const n = latHist.length, last = n ? latHist[n - 1] : 0, avg = n ? latHist.reduce((a, b) => a + b, 0) / n : 0;
+  const p95 = n ? [...latHist].sort((a, b) => a - b)[Math.floor(0.95 * (n - 1))] : 0;
+  const drops = linkHist.length - linkHist.reduce((a, b) => a + b, 0);
+  const drop = bleChar ? (linkHist.length ? Math.round(drops / linkHist.length * 100) + '%' : '0%') : 'n/a';
+  $('ticker').textContent = `FPS ${stats.fps} | ${latSrc} ${Math.round(last)}ms\navg ${Math.round(avg)} p95 ${Math.round(p95)} | DROP ${drop}`;
+}
+setInterval(() => { drawSpark(); updateTicker(); }, 200);
+
+/* ---------- ghost hand: filtered servo output (solid) vs raw tracking (dashed) ---------- */
+const GH = {   // base point, rest angle (deg clockwise from up), segment lengths, curl direction
+  thumb:  {b:[40,116], a:-52, l:[26,22], k: 1},
+  index:  {b:[50,80],  a:-8,  l:[30,24], k: 1},
+  middle: {b:[68,76],  a:0,   l:[34,26], k: 1},
+  ring:   {b:[86,80],  a:7,   l:[30,24], k:-1},
+  pinky:  {b:[102,92], a:15,  l:[24,20], k:-1},
+};
+const dir = d => [Math.sin(d * Math.PI / 180), -Math.cos(d * Math.PI / 180)];
+function drawHandShape(g, vals, color, dashed) {
+  g.strokeStyle = color; g.fillStyle = color; g.lineWidth = 2; g.lineJoin = g.lineCap = 'round';
+  g.setLineDash(dashed ? [3, 3] : []);
+  g.beginPath(); g.moveTo(42, 84); g.lineTo(112, 96); g.lineTo(102, 150); g.lineTo(52, 150); g.closePath(); g.stroke();
+  NAMES.forEach(n => {
+    const f = GH[n], c = 1 - vals[n] / 180;
+    const a1 = f.a + f.k * c * 70, a2 = a1 + f.k * c * 95, d1 = dir(a1), d2 = dir(a2);
+    const p1 = [f.b[0] + d1[0] * f.l[0], f.b[1] + d1[1] * f.l[0]];
+    const p2 = [p1[0] + d2[0] * f.l[1], p1[1] + d2[1] * f.l[1]];
+    g.beginPath(); g.moveTo(f.b[0], f.b[1]); g.lineTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]); g.stroke();
+    if (!dashed) [p1, p2].forEach(p => { g.beginPath(); g.arc(p[0], p[1], 2.2, 0, 7); g.fill(); });
+  });
+}
+function drawGhost() {
+  const g = ghostCtx;
+  g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, 150, 170);
+  const col = estop ? '#FF3344' : locked ? '#FFB020' : '#00FF66';
+  const tracking = performance.now() - lastHandAt < 300;
+  drawHandShape(g, tracking ? raw : smooth, 'rgba(255,51,68,.55)', true);
+  drawHandShape(g, smooth, col, false);
+  g.setLineDash([]); g.font = '10px Courier New'; g.textAlign = 'left'; g.fillStyle = col;
+  g.fillText('GHOST HAND', 8, 14);
+  g.fillStyle = '#94A3B8';
+  g.fillText(estop ? 'HALTED' : locked ? 'LOCKED' : (mirror && bleChar) ? 'LIVE → ARM' : 'SIMULATED', 8, 164);
+  g.textAlign = 'right';
+  g.fillStyle = 'rgba(255,51,68,.85)'; g.fillText('raw', 142, 14);
+  g.fillStyle = col; g.fillText('filtered', 142, 26);
+}
+
+/* ---------- Python core link ---------- */
 let ws = null;
 const wsOpen = () => ws && ws.readyState === 1;
 const wsSend = o => { if (wsOpen()) ws.send(JSON.stringify(o)); };
 function connectWS() {
   ws = new WebSocket('ws://localhost:8765');
-  ws.onopen = () => { $('core-dot').classList.add('ok'); $('core-txt').textContent = 'CORE LINKED'; };
+  ws.onopen = () => {
+    $('core-dot').classList.add('ok'); $('core-txt').textContent = 'CORE LINKED';
+    wsSend({type: 'lock', on: locked}); wsSend({type: 'estop', on: estop});
+  };
   ws.onclose = () => { $('core-dot').classList.remove('ok'); $('core-txt').textContent = 'CORE OFFLINE'; setTimeout(connectWS, 1500); };
-  ws.onmessage = e => { try { onCore(JSON.parse(e.data)); } catch {} };
+  ws.onmessage = e => { stats.msgs++; try { onCore(JSON.parse(e.data)); } catch {} };
 }
 const STATE_TXT = {idle:'ANIMUS: ONLINE', listening:'ANIMUS: LISTENING…', thinking:'ANIMUS: THINKING…', speaking:'ANIMUS: SPEAKING…'};
 function onCore(m) {
   if (m.type === 'state') {
+    if (m.state !== 'idle') touch();
+    if (locked) return;
     $('vstatus').textContent = STATE_TXT[m.state] || 'ANIMUS';
     $('voice').classList.toggle('live', m.state !== 'idle');
     if (m.state !== 'idle') $('voice').classList.remove('sleeping');
-  } else if (m.type === 'transcript') { $('transcript').textContent = `"${m.text}"`; $('reply').hidden = true; }
+  } else if (m.type === 'transcript') { touch(); $('transcript').textContent = `"${m.text}"`; $('reply').hidden = true; }
   else if (m.type === 'reply') { $('reply').hidden = false; $('reply').textContent = m.text; }
-  else if (m.type === 'estop') setEstop(true);
+  else if (m.type === 'estop') setEstop(true, false);
+  else if (m.type === 'lock') { if (m.on !== locked) setLocked(m.on, false); }
   else if (m.type === 'hand_command') applyCommandPose(m.angles);
 }
 
 /* ---------- Bluetooth LE (Nordic UART style) ---------- */
 const NUS = '6e400001-b5a0-f393-e0a9-e50e24dcca9e', NUS_RX = '6e400002-b5a0-f393-e0a9-e50e24dcca9e';
-let bleDev = null, bleChar = null, bleBusy = false, estop = false, mirror = false;
+let bleDev = null, bleChar = null, bleBusy = false;
 const enc = new TextEncoder();
-async function bleWrite(str) {            // payload must stay <= 20 bytes
-  if (!bleChar || bleBusy) return;
+async function bleWrite(str) {            // payload must stay <= 20 bytes; resolves true if handed to the BLE stack
+  if (!bleChar || bleBusy) return false;
   bleBusy = true;
-  try { await bleChar.writeValueWithoutResponse(enc.encode(str)); } catch (e) { console.warn('BLE write', e); }
-  bleBusy = false;
+  try { await bleChar.writeValueWithoutResponse(enc.encode(str)); pushLink(true); return true; }
+  catch (e) { console.warn('BLE write', e); pushLink(false); return false; }
+  finally { bleBusy = false; }
 }
 function setBt(ok, name = 'NONE') {
   $('bt-status').textContent = ok ? 'CONNECTED' : 'NOT CONNECTED';
@@ -191,6 +335,8 @@ function setBt(ok, name = 'NONE') {
   $('bt-pill').textContent = ok ? '[ BT: LINKED ]' : '[ BT: DISCONNECTED ]';
   $('bt-pill').classList.toggle('ok', ok);
   if (!ok) { bleChar = null; $('bt-batt').textContent = '--'; }
+  latHist.length = 0; linkHist.length = 0;   // don't mix vision-only and vision→BLE samples
+  drawGhost();
 }
 $('bt-btn').onclick = async () => {
   if (bleDev && bleDev.gatt.connected) { bleDev.gatt.disconnect(); return; }
@@ -209,54 +355,93 @@ $('bt-btn').onclick = async () => {
   } catch (e) { console.warn(e); setBt(false); $('bt-status').textContent = 'CONNECTION FAILED'; }
 };
 
-/* ---------- Output to arm: smoothing, rate limit, keepalive, e-stop ---------- */
-const smooth = {thumb:180, index:180, middle:180, ring:180, pinky:180};
+/* ---------- Arm output: smoothing, rate limit, keepalive ---------- */
 let lastSent = null, lastSentAt = 0, overrideUntil = 0;
-function emit(angles) {
+function emit(angles, minMs = SEND_MS, frameT0) {
   const now = performance.now();
-  if (estop || !bleChar || now - lastSentAt < SEND_MS) return;
+  if (estop || locked || !bleChar || now - lastSentAt < minMs) return;
   const changed = !lastSent || NAMES.some(n => Math.abs(angles[n] - lastSent[n]) > 1);
   if (!changed && now - lastSentAt < KEEPALIVE_MS) return;
+  if (bleBusy) { pushLink(false); return; }      // wanted to send but the link was busy: counts as a drop
   lastSent = {...angles}; lastSentAt = now;
-  bleWrite(NAMES.map(n => Math.round(angles[n])).join(',') + '\n');
+  bleWrite(NAMES.map(n => Math.round(angles[n])).join(',') + '\n')
+    .then(ok => { if (ok && frameT0) pushLat(performance.now() - frameT0, 'VISION→BLE'); });
   NAMES.forEach(n => $('s-' + n).textContent = Math.round(angles[n]) + '°');
   wsSend({type: 'robot_hand_angles', data: angles});
 }
-function applyCommandPose(angles) {       // pose requested by voice
-  if (estop) return;
+function applyCommandPose(angles) {
+  if (estop || locked) return;
+  touch();
   overrideUntil = performance.now() + 2500;
-  NAMES.forEach(n => smooth[n] = angles[n]);
-  lastSentAt = 0; emit(smooth);
+  NAMES.forEach(n => { smooth[n] = angles[n]; raw[n] = angles[n]; });
+  paintJoints(); lastSentAt = 0; emit(smooth);
 }
-function setEstop(on) {
+
+/* ---------- Sleep / lock closing animation ---------- */
+function playSleepAnimation(onComplete) {
+  if (animating) return;                          // one animation at a time
+  animating = true;
+  const start = {...smooth}, begin = performance.now(), dur = 800;
+  const step = now => {
+    const p = Math.max(0, Math.min((now - begin) / dur, 1)), e = 1 - Math.pow(1 - p, 3);   // ease-out
+    NAMES.forEach(n => smooth[n] = start[n] + (SLEEP_POSE - start[n]) * e);
+    paintJoints();
+    if (SLEEP_MOVES_ARM) emit(smooth, SEND_MS);
+    if (p < 1) return requestAnimationFrame(step);
+    animating = false;
+    if (SLEEP_MOVES_ARM) { lastSentAt = 0; emit(smooth); }
+    if (onComplete) onComplete();
+  };
+  requestAnimationFrame(step);
+}
+
+/* ---------- Modes: e-stop, lock, mirror, awake ---------- */
+function setMirror(on) {
+  if (on && (locked || estop)) return;
+  mirror = on;
+  $('mirror').textContent = 'MIRROR: ' + (on ? 'ON' : 'OFF');
+  $('mirror').classList.toggle('on', on);
+  $('mirror').setAttribute('aria-pressed', on);
+  drawGhost();
+}
+function setEstop(on, notify = true) {
+  if (estop === on) return;
   estop = on;
   $('estop').classList.toggle('on', on);
   $('estop').setAttribute('aria-pressed', on);
   $('estop').textContent = on ? 'RESUME' : 'E-STOP';
-  if (on) { bleBusy = false; bleWrite('STOP\n'); }   // firmware should halt on STOP and on a missed keepalive
+  if (on) { setMirror(false); bleBusy = false; bleWrite('STOP\n'); }   // firmware should halt on STOP and on a missed keepalive
+  banner();
+  if (notify) wsSend({type: 'estop', on});
 }
-$('estop').onclick = () => setEstop(!estop);
-$('mirror').onclick = () => {
-  mirror = !mirror;
-  $('mirror').textContent = 'MIRROR: ' + (mirror ? 'ON' : 'OFF');
-  $('mirror').classList.toggle('on', mirror);
-  $('mirror').setAttribute('aria-pressed', mirror);
-};
-$('shelf-tab').onclick = () => {
-  const open = $('shelf').classList.toggle('open');
-  $('shelf-tab').textContent = 'HARDWARE & BLUETOOTH ' + (open ? '▴' : '▾');
-};
-
-/* ---------- Wake / sleep UI ---------- */
-let awake = false;
-function setAwake(on) {
+function setAwake(on, notify = true) {
+  if (on && locked) return;
   awake = on;
+  if (on) touch();
   $('voice').classList.toggle('sleeping', !on);
   $('voice').classList.toggle('live', on);
   $('vstatus').textContent = on ? 'ANIMUS: ONLINE' : 'ANIMUS: SLEEP (hold ✌ for 3s to wake)';
   $('transcript').textContent = on ? 'ANIMUS is awake. Speak or type below.' : 'System sleeping.';
-  wsSend({type: on ? 'wake' : 'sleep'});
+  if (!on) setMirror(false);
+  if (notify) wsSend({type: on ? 'wake' : 'sleep'});
 }
+function setLocked(on, notify = true) {
+  locked = on;
+  store.set('locked', on ? '1' : '0');
+  if (on) { setMirror(false); setAwake(false, false); }
+  $('cmd').disabled = on; $('send').disabled = on; $('mirror').disabled = on;
+  $('voice').classList.toggle('locked', on);
+  $('vstatus').textContent = on ? 'ANIMUS: LOCKED' : 'ANIMUS: SLEEP (hold ✌ for 3s to wake)';
+  $('transcript').textContent = on ? 'Locked. Hold ✌ for 3s to unlock.' : 'System sleeping.';
+  banner();
+  if (notify) wsSend({type: 'lock', on});
+}
+$('estop').onclick = () => setEstop(!estop);
+$('mirror').onclick = () => setMirror(!mirror);
+$('shelf-tab').onclick = () => {
+  const open = $('shelf').classList.toggle('open');
+  $('shelf-tab').textContent = 'HARDWARE & BLUETOOTH ' + (open ? '▴' : '▾');
+};
 
 /* ---------- Typed commands ---------- */
 function localReply(q) {                  // fallback when the Python core is offline
@@ -267,7 +452,8 @@ function localReply(q) {                  // fallback when the Python core is of
 }
 function submit() {
   const q = $('cmd').value.trim();
-  if (!q) return;
+  if (!q || locked) return;
+  touch();
   $('cmd').value = '';
   $('transcript').textContent = `"${q}"`;
   $('voice').classList.remove('sleeping');
@@ -277,7 +463,49 @@ function submit() {
 $('send').onclick = submit;
 $('cmd').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 
-/* ---------- Vision ---------- */
+/* ---------- Attract mode (idle demo) ---------- */
+const fmtUp = () => { const s = Math.floor((performance.now() - t0) / 1000); return `${Math.floor(s / 60)}m ${s % 60}s`; };
+const SLIDES = [
+  () => ['CORE LINK', [`Voice core: ${wsOpen() ? 'linked' : 'offline'}`, `Messages received: ${stats.msgs}`, 'Wake: HEY JARVIS or hold ✌']],
+  () => ['VISION', [`Tracking: ${stats.fps} FPS`, `Latency: ${stats.lat} ms`, 'MediaPipe Hands, 1 hand']],
+  () => ['HAND LINK', [`Bluetooth: ${bleChar ? 'linked' : 'not linked'}`, `Device: ${$('bt-device').textContent}`, `Battery: ${$('bt-batt').textContent}`]],
+  () => ['SERVO OUTPUT (IDLE BREATHING)', NAMES.map(n => `${n}: ${Math.round(smooth[n])}°`)],
+  () => ['SYSTEM', [`Uptime: ${fmtUp()}`, `Lock: ${locked ? 'locked' : 'open'}`, `E-stop: ${estop ? 'ACTIVE' : 'clear'}`]],
+];
+let slideIdx = 0, attractStart = 0, tickTimer = null, slideTimer = null, breatheTimer = null;
+function renderSlide() {
+  const [title, lines] = SLIDES[slideIdx]();
+  $('slide-title').textContent = title;
+  $('slide-body').textContent = lines.join('\n');
+}
+function startAttract() {
+  attract = true; attractStart = performance.now(); slideIdx = 0;
+  $('attract').hidden = false; renderSlide();
+  tickTimer = setInterval(renderSlide, 500);
+  slideTimer = setInterval(() => {
+    $('slide').style.opacity = 0;
+    setTimeout(() => { slideIdx = (slideIdx + 1) % SLIDES.length; renderSlide(); $('slide').style.opacity = 1; }, 350);
+  }, 4000);
+  breatheTimer = setInterval(() => {      // slow, small, low-rate: gentle on servos and battery
+    const t = performance.now() - attractStart;
+    NAMES.forEach((n, i) => { smooth[n] = raw[n] = 150 + 28 * Math.sin(2 * Math.PI * (t / 8000 - i * 0.06)); });
+    paintJoints(); emit(smooth, 100);
+  }, 100);
+}
+function stopAttract() {
+  attract = false; $('attract').hidden = true;
+  clearInterval(tickTimer); clearInterval(slideTimer); clearInterval(breatheTimer);
+  NAMES.forEach(n => smooth[n] = raw[n] = 180); paintJoints();
+  lastSentAt = 0; emit(smooth);
+}
+function touch() { lastActive = performance.now(); if (attract) stopAttract(); }
+setInterval(() => {
+  const idle = performance.now() - lastActive;
+  if (!attract && !awake && idle > ATTRACT_MS) startAttract();
+  if (awake && AUTO_SLEEP_MS && idle > AUTO_SLEEP_MS && !mirror && !animating) playSleepAnimation(() => setAwake(false));
+}, 500);
+
+/* ---------- Vision & gestures ---------- */
 const ang3 = (a, b, c) => {
   const v = [a.x-b.x, a.y-b.y, a.z-b.z], w = [c.x-b.x, c.y-b.y, c.z-b.z];
   const m = Math.hypot(...v) * Math.hypot(...w);
@@ -292,11 +520,16 @@ function hold(key, active, ms, done) {    // returns 0..1 progress, fires done()
   if (p >= 1) { holds[key] = null; done(); return 1; }
   return p;
 }
+let fistFrames = 0;
+function resetGestures() { Object.keys(holds).forEach(k => holds[k] = null); fistFrames = 0; $('gesture-bar').hidden = true; }
+
+paintJoints(); drawSpark(); updateTicker();
 
 $('start').onclick = async () => {
   $('home').style.display = 'none';
   $('hud').style.display = 'flex';
   connectWS();
+  if (locked) setLocked(true, false);
   try {
     if (typeof Hands === 'undefined') throw new Error('MediaPipe failed to load from the CDN. Check your network.');
     const video = $('webcam'), canvas = $('out'), ctx = canvas.getContext('2d');
@@ -308,19 +541,21 @@ $('start').onclick = async () => {
     hands.setOptions({maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
 
     let frames = 0, latSum = 0, sendStart = 0;
-    setInterval(() => {
-      $('ticker').textContent = `FPS ${frames} | LAT ${frames ? Math.round(latSum / frames) : 0}ms`;
-      frames = 0; latSum = 0;
-    }, 1000);
+    setInterval(() => { stats.fps = frames; stats.lat = frames ? Math.round(latSum / frames) : 0; frames = 0; latSum = 0; }, 1000);
 
     hands.onResults(res => {
-      frames++; latSum += performance.now() - sendStart;
+      const visLat = performance.now() - sendStart;
+      frames++; latSum += visLat;
+      if (!bleChar) pushLat(visLat, 'VISION');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (res.image) ctx.drawImage(res.image, 0, 0, canvas.width, canvas.height);
       const lm = res.multiHandLandmarks && res.multiHandLandmarks[0];
-      if (!lm) { hold('peace', false); hold('fist', false); $('gesture-bar').style.display = 'none'; return; }
+      if (!lm) { resetGestures(); return; }
+      lastHandAt = performance.now();
+      touch();
       drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#4285F4', lineWidth: 3});
       drawLandmarks(ctx, lm, {color: '#FF3344', fillColor: '#FFFFFF', radius: 4});
+      if (animating) return;                  // let the sleep/lock animation own the output
 
       // metric 3D landmarks avoid the 16:9 distortion; fall back to image landmarks scaled by aspect
       const wl = res.multiHandWorldLandmarks && res.multiHandWorldLandmarks[0];
@@ -330,23 +565,39 @@ $('start').onclick = async () => {
       const target = {};
       NAMES.forEach(n => {
         const [a, b, c] = JOINTS[n], [lo, hi] = RANGE[n];
-        const t = Math.max(0, Math.min(1, (ang3(P[a], P[b], P[c]) - lo) / (hi - lo)));
-        target[n] = t * 180;
-        smooth[n] = smooth[n] * (1 - SMOOTH) + target[n] * SMOOTH;
-        $('v-' + n).textContent = Math.round(smooth[n]) + '°';
-        $('b-' + n).style.width = (smooth[n] / 180 * 100) + '%';
+        const t = (ang3(P[a], P[b], P[c]) - lo) / (hi - lo);
+        target[n] = Math.max(0, Math.min(1, 0.5 + (t - 0.5) * gain)) * 180;   // sensitivity = gain around mid-range
+        raw[n] = target[n];
+        smooth[n] = smooth[n] * (1 - alpha) + target[n] * alpha;               // smoothing slider
       });
+      paintJoints();
 
       const open = n => smooth[n] > 120, closed = n => smooth[n] < 60;
+
+      // FIST = instant e-stop (raw values, ~3 frames of debounce). Works even when asleep or locked.
+      fistFrames = NAMES.every(n => target[n] < 55) ? fistFrames + 1 : 0;
+      if (fistFrames >= 3 && !estop && (FIST_ESTOP_IN_MIRROR || !mirror)) setEstop(true);
+
+      // thumb direction in aspect-corrected image space
+      const T = lm.map(p => ({x: p.x, y: p.y * asp}));
+      const tv = {x: T[4].x - T[2].x, y: T[4].y - T[2].y}, tl = Math.hypot(tv.x, tv.y) || 1;
+      const thumbOnly = smooth.thumb > 100 && ['index','middle','ring','pinky'].every(n => smooth[n] < 70);
+      const thumbsUp = thumbOnly && -tv.y / tl > 0.6, thumbsDown = thumbOnly && tv.y / tl > 0.6;
+
       const peace = open('index') && open('middle') && closed('ring') && closed('pinky');
-      const fist = NAMES.every(closed);
+      const palm = NAMES.every(open);
 
-      const pp = hold('peace', peace && !awake, 3000, () => setAwake(true));
-      hold('fist', fist && awake && !mirror, 1500, () => setAwake(false));
-      $('gesture-bar').style.display = pp > 0 ? 'block' : 'none';
-      $('gesture-bar').textContent = `HOLD ✌ TO WAKE: ${(pp * 3).toFixed(1)}s / 3.0s`;
+      const pk = hold('peace', peace && (!awake || locked), 3000, () => { if (locked) setLocked(false); else setAwake(true); });
+      const pl = hold('palm', palm && !locked, 3000, () => playSleepAnimation(() => setLocked(true)));
+      hold('up', thumbsUp && awake && !locked && !estop, 600, () => setMirror(true));
+      hold('down', thumbsDown && awake && !locked, 600, () => setMirror(false));
 
-      if (mirror && performance.now() > overrideUntil) emit(smooth);
+      const prog = Math.max(pk, pl);
+      $('gesture-bar').hidden = prog <= 0;
+      if (prog > 0) $('gesture-bar').textContent =
+        `HOLD ${pk >= pl ? '✌ TO ' + (locked ? 'UNLOCK' : 'WAKE') : '✋ TO LOCK'}: ${(prog * 3).toFixed(1)}s / 3.0s`;
+
+      if (mirror && !locked && !estop && performance.now() > overrideUntil) emit(smooth, SEND_MS, sendStart);
     });
 
     let last = 0;
