@@ -9,8 +9,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
 <style>
 :root{
-  --bg:#0f1722; --panel:#172231; --raise:#213146; --line:rgba(150,180,215,.14);
-  --text:#e9eef5; --dim:#8fa2b8; --accent:#5aa9ff; --ok:#46d6a8; --warn:#ffb020; --danger:#ff4d5e;
+  --bg:#050a17; --panel:#0a1430; --raise:#12224a; --line:rgba(96,140,255,.18);
+  --text:#e6ecff; --dim:#8796bd; --accent:#4b87ff; --ok:#3ddc97; --warn:#ffb020; --danger:#ff3344;
   --sans:'Segoe UI Variable Text','Segoe UI',Roboto,'Helvetica Neue',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -25,18 +25,17 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 #home{text-align:center;max-width:520px;padding:0 24px}
 #home h1{font-size:44px;font-weight:600;letter-spacing:-.01em;margin-bottom:12px}
 #home p{color:var(--dim);font-size:16px;line-height:1.6;margin-bottom:32px}
-.primary{background:var(--accent);color:#06111f;border:0;border-radius:10px;padding:12px 26px;font-weight:600}
-.primary:hover:not(:disabled){filter:brightness(1.1)}
+.primary{background:var(--accent);color:#04122b;border:0;border-radius:10px;padding:12px 26px;font-weight:600}
+.primary:hover:not(:disabled){filter:brightness(1.12)}
 .primary:disabled{opacity:.4;cursor:not-allowed}
+.primary.wide{width:100%;margin-top:14px;padding:10px}
 
 /* header */
 #hud{display:none;position:absolute;inset:0;flex-direction:column}
-header{height:56px;flex:none;display:flex;align-items:center;gap:20px;padding:0 24px;border-bottom:1px solid var(--line)}
+header{height:56px;flex:none;display:flex;align-items:center;gap:22px;padding:0 24px;border-bottom:1px solid var(--line);background:rgba(10,20,48,.55)}
 .brand{font-size:17px;font-weight:650;letter-spacing:.01em}
-.status{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;background:none;border:0;padding:0}
-.chip{border:1px solid var(--line);border-radius:999px;padding:5px 12px}
-.chip:hover{border-color:var(--accent);color:var(--text)}
-.dot{width:8px;height:8px;border-radius:50%;background:#4a5a6e}
+.status{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:#34456f}
 .dot.ok{background:var(--ok)}
 .actions{margin-left:auto;display:flex;align-items:center;gap:20px}
 .switch{display:flex;align-items:center;gap:10px;background:none;border:0;font-size:13px}
@@ -49,31 +48,44 @@ header{height:56px;flex:none;display:flex;align-items:center;gap:20px;padding:0 
 .stop:hover{filter:brightness(1.08)}
 .stop.on{background:#fff;color:var(--danger)}
 
+/* top hardware shelf */
+#shelf-tab{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:35;background:var(--panel);border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;padding:5px 18px;font-size:12px;color:var(--accent)}
+#shelf-tab:hover{background:var(--accent);color:#04122b}
+#shelf{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:30;width:min(880px,94vw);max-height:0;overflow:hidden;padding:0 26px;background:rgba(10,20,48,.98);border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;box-shadow:0 24px 48px rgba(0,0,0,.55)}
+#shelf.open{max-height:420px;padding:44px 26px 24px;border-color:var(--accent)}
+@media(prefers-reduced-motion:no-preference){#shelf{transition:max-height .35s ease,padding .35s ease}}
+.shelf-grid{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:28px}
+.shelf-grid h2,.sec h2{font-size:13px;font-weight:600;color:var(--dim);margin-bottom:12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px}
+.kv dt{color:var(--dim)}.kv dd{text-align:right;font-weight:500}
+.frows{display:grid;grid-template-columns:1fr auto auto;gap:7px 20px;font-size:13px}
+.frows .h{color:var(--dim);font-size:12px}
+.frows span:nth-child(3n+2),.frows span:nth-child(3n){text-align:right}
+.slider{display:grid;grid-template-columns:1fr auto;row-gap:6px;margin-bottom:16px;font-size:13px}
+.slider:last-child{margin-bottom:0}
+.slider output{color:var(--dim)}
+.slider input{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.note{margin-top:12px;font-size:12px;color:var(--dim);line-height:1.5}
+
 /* layout */
 main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr);gap:24px;padding:24px}
 .stage{display:flex;flex-direction:column;gap:16px;min-height:0}
-.video{position:relative;flex:1;min-height:0;border-radius:18px;overflow:hidden;background:#090e15;border:1px solid var(--line);display:flex;justify-content:center;align-items:center}
+.video{position:relative;flex:1;min-height:0;border-radius:18px;overflow:hidden;background:#03060f;border:1px solid var(--line);display:flex;justify-content:center;align-items:center}
 video{display:none}
 #out{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.state{position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(15,23,34,.78);backdrop-filter:blur(6px);font-size:13px;font-weight:600}
+.state{position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(5,10,23,.78);backdrop-filter:blur(6px);font-size:13px;font-weight:600}
 .state::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--dim)}
 .state.ok::before{background:var(--ok)}
 .state.warn{color:var(--warn)}.state.warn::before{background:var(--warn)}
 .state.danger{color:var(--danger)}.state.danger::before{background:var(--danger)}
-#gesture-bar{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);min-width:240px;padding:10px 16px;border-radius:12px;background:rgba(15,23,34,.88);backdrop-filter:blur(6px);font-size:13px}
+#gesture-bar{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);min-width:240px;padding:10px 16px;border-radius:12px;background:rgba(5,10,23,.88);backdrop-filter:blur(6px);font-size:13px}
 #gesture-bar i{display:block;height:4px;border-radius:2px;background:var(--raise);margin-top:8px;overflow:hidden}
 #gesture-bar b{display:block;height:100%;width:0;background:var(--accent)}
 
-/* hand model: hidden until requested */
-#ghost-panel{position:absolute;right:16px;bottom:16px;width:188px;padding:12px 14px 10px;border-radius:14px;background:rgba(15,23,34,.9);backdrop-filter:blur(8px);border:1px solid var(--line);opacity:0;visibility:hidden;transform:translateY(10px) scale(.98);pointer-events:none}
-#ghost-panel[data-open="1"]{opacity:1;visibility:visible;transform:none}
-@media(prefers-reduced-motion:no-preference){#ghost-panel{transition:opacity .25s,transform .25s,visibility .25s}}
-.gh-head{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:6px}
-.gh-head b{color:var(--text);font-weight:600}
-#ghost{display:block;width:160px;height:192px;margin:0 auto}
-.gh-key{display:flex;gap:14px;justify-content:center;font-size:11px;color:var(--dim);margin-top:6px}
-.gh-key span::before{content:'';display:inline-block;width:14px;border-top:2px solid var(--text);margin-right:5px;vertical-align:middle}
-.gh-key span+span::before{border-top:2px dashed var(--danger)}
+/* 2D hand: hidden until requested */
+#ghost{position:absolute;right:16px;bottom:16px;width:150px;height:170px;background:rgba(5,10,23,.82);border:1px solid var(--line);border-radius:10px;opacity:0;visibility:hidden;transform:translateY(8px);pointer-events:none}
+#ghost[data-open="1"]{opacity:1;visibility:visible;transform:none}
+@media(prefers-reduced-motion:no-preference){#ghost{transition:opacity .25s,transform .25s,visibility .25s}}
 
 /* telemetry */
 .metrics{flex:none;display:flex;align-items:center;gap:28px;padding:0 4px}
@@ -84,16 +96,11 @@ video{display:none}
 /* sidebar */
 .side{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .sec{padding:20px 22px;border-bottom:1px solid var(--line)}
-.sec h2{font-size:13px;font-weight:600;color:var(--dim);margin-bottom:14px}
 .row{display:grid;grid-template-columns:62px 1fr 42px;gap:12px;align-items:center;margin-bottom:10px}
 .row:last-child{margin-bottom:0}
 .row b{text-align:right;font-weight:500;color:var(--dim)}
 .bar{height:6px;border-radius:3px;background:var(--raise);overflow:hidden}
 .bar i{display:block;height:100%;width:100%;background:var(--accent)}
-.slider{display:grid;grid-template-columns:1fr auto;row-gap:6px;margin-bottom:14px}
-.slider:last-child{margin-bottom:0}
-.slider output{color:var(--dim)}
-.slider input{grid-column:1/-1;width:100%;accent-color:var(--accent)}
 details{font-size:13px;color:var(--dim)}
 summary{cursor:pointer;padding:14px 22px;border-bottom:1px solid var(--line);list-style:none}
 summary::-webkit-details-marker{display:none}
@@ -110,11 +117,11 @@ details li b{display:inline-block;width:46px;color:var(--text);font-weight:500}
 .rbox{margin-top:12px;padding-left:12px;border-left:2px solid var(--accent);color:var(--dim);font-size:13px;line-height:1.55;overflow-y:auto;white-space:pre-wrap;flex:1;min-height:0}
 .inrow{display:flex;gap:8px;margin-top:auto;padding-top:14px}
 .inrow input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
-.inrow input::placeholder{color:#5d7089}
+.inrow input::placeholder{color:#4f5f88}
 .inrow .primary{padding:9px 18px}
 
 /* idle demo */
-#attract{position:absolute;inset:56px 0 0 0;z-index:20;background:rgba(15,23,34,.78);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:24px;text-align:center;pointer-events:none}
+#attract{position:absolute;inset:56px 0 0 0;z-index:20;background:rgba(5,10,23,.8);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:24px;text-align:center;pointer-events:none}
 #attract h2{font-size:clamp(22px,3.8vw,50px);font-weight:700;line-height:1.2;max-width:20ch}
 .slide{min-width:min(420px,88vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 26px;text-align:left}
 @media(prefers-reduced-motion:no-preference){.slide{transition:opacity .35s}#attract h2{animation:breathe 3s ease-in-out infinite}@keyframes breathe{50%{opacity:.7}}}
@@ -126,6 +133,10 @@ details li b{display:inline-block;width:46px;color:var(--text);font-weight:500}
   body{overflow:auto;display:block}
   #hud{position:static;min-height:100vh}
   header{flex-wrap:wrap;height:auto;padding:12px 16px;gap:12px}
+  #shelf-tab,#shelf{position:fixed;top:auto;bottom:0;border-radius:12px 12px 0 0}
+  #shelf-tab{bottom:0}
+  #shelf.open{bottom:30px;max-height:80vh;overflow:auto}
+  .shelf-grid{grid-template-columns:1fr}
   main{grid-template-columns:1fr;padding:16px}
   .video{flex:none;aspect-ratio:16/9}
   .metrics{flex-wrap:wrap;gap:16px}
@@ -143,12 +154,39 @@ details li b{display:inline-block;width:46px;color:var(--text);font-weight:500}
   <header>
     <div class="brand">Animus</div>
     <div class="status"><i class="dot" id="core-dot"></i><span id="core-txt">Voice core offline</span></div>
-    <button class="status chip" id="bt-btn" type="button" title="Pair the robot hand over Bluetooth"><i class="dot" id="bt-dot"></i><span id="bt-txt">Connect arm</span></button>
+    <div class="status"><i class="dot" id="bt-dot"></i><span id="bt-txt">Arm not connected</span></div>
     <div class="actions">
       <button class="switch" id="mirror" type="button" aria-pressed="false"><span class="track"></span><span>Mirror</span></button>
       <button class="stop" id="estop" type="button" aria-pressed="false">Emergency stop</button>
     </div>
   </header>
+
+  <button id="shelf-tab" type="button" aria-expanded="false" aria-controls="shelf">Hardware and tuning ▾</button>
+  <div id="shelf" role="region" aria-label="Hardware and tuning">
+    <div class="shelf-grid">
+      <div>
+        <h2>Robot arm</h2>
+        <dl class="kv">
+          <dt>Status</dt><dd id="bt-status" style="color:var(--danger)">Not connected</dd>
+          <dt>Device</dt><dd id="bt-device">None</dd>
+          <dt>Battery</dt><dd id="bt-batt">--</dd>
+        </dl>
+        <button class="primary wide" id="bt-btn" type="button">Connect to robot arm</button>
+      </div>
+      <div>
+        <h2>Fingers</h2>
+        <div class="frows" id="frows">
+          <span class="h">Finger</span><span class="h">Servo</span><span class="h">Battery</span>
+        </div>
+        <p class="note">All servos share one battery pack, so each finger shows the pack level reported by the arm.</p>
+      </div>
+      <div>
+        <h2>Tuning</h2>
+        <div class="slider"><label for="sens">Sensitivity</label><output id="sens-v">1.0×</output><input type="range" id="sens" min="1" max="10" step="1" value="5"></div>
+        <div class="slider"><label for="smo">Smoothness</label><output id="smo-v">65%</output><input type="range" id="smo" min="0" max="90" step="5" value="65"></div>
+      </div>
+    </div>
+  </div>
 
   <main>
     <section class="stage">
@@ -157,11 +195,7 @@ details li b{display:inline-block;width:46px;color:var(--text);font-weight:500}
         <canvas id="out" width="1280" height="720"></canvas>
         <div class="state" id="state">Asleep</div>
         <div id="gesture-bar" hidden><span id="gesture-txt"></span><i><b id="gesture-fill"></b></i></div>
-        <div id="ghost-panel" data-open="0" aria-hidden="true">
-          <div class="gh-head"><b>Hand model</b><span id="gh-status">Simulated</span></div>
-          <canvas id="ghost" width="320" height="384" aria-label="Hand model showing the filtered servo output"></canvas>
-          <div class="gh-key"><span>Output</span><span>Raw tracking</span></div>
-        </div>
+        <canvas id="ghost" width="300" height="340" data-open="0" aria-hidden="true" aria-label="2D hand showing the filtered servo output"></canvas>
       </div>
       <div class="metrics">
         <canvas id="spark" width="320" height="80" aria-label="Latency over the last 60 samples"></canvas>
@@ -174,11 +208,6 @@ details li b{display:inline-block;width:46px;color:var(--text);font-weight:500}
 
     <aside class="side">
       <div class="sec"><h2>Fingers</h2><div id="joints"></div></div>
-      <div class="sec">
-        <h2>Response</h2>
-        <div class="slider"><label for="sens">Sensitivity</label><output id="sens-v">1.0×</output><input type="range" id="sens" min="1" max="10" step="1" value="5"></div>
-        <div class="slider"><label for="smo">Smoothness</label><output id="smo-v">65%</output><input type="range" id="smo" min="0" max="90" step="5" value="65"></div>
-      </div>
       <details>
         <summary>Gesture guide</summary>
         <ul>
@@ -219,6 +248,7 @@ const AUTO_SLEEP_MS = 60000;       // awake but idle this long -> sleep (0 disab
 const FIST_ESTOP_IN_MIRROR = true; // false lets a fist close the arm while mirroring instead of e-stopping
 const SLEEP_POSE = 0;              // pose the sleep/lock animation ends in (0 closed, 180 open)
 const SLEEP_MOVES_ARM = true;      // false = animation only moves the on-screen hand
+const GHOST_ON_REQUEST = true;     // false = the 2D hand is always visible
 const LAT_TARGET_MS = 100, HIST = 60;
 const STATE_TXT = {idle:'Ready', listening:'Listening', thinking:'Thinking', speaking:'Speaking'};
 
@@ -227,11 +257,15 @@ const store = {
   set(k, v) { try { localStorage.setItem('animus.' + k, v); } catch {} }
 };
 
-NAMES.forEach(n => $('joints').insertAdjacentHTML('beforeend',
-  `<div class="row"><span>${cap(n)}</span><div class="bar"><i id="b-${n}"></i></div><b id="v-${n}">180°</b></div>`));
+NAMES.forEach(n => {
+  $('joints').insertAdjacentHTML('beforeend',
+    `<div class="row"><span>${cap(n)}</span><div class="bar"><i id="b-${n}"></i></div><b id="v-${n}">180°</b></div>`);
+  $('frows').insertAdjacentHTML('beforeend',
+    `<span>${cap(n)}</span><span id="a-${n}">180°</span><span id="bat-${n}">--</span>`);
+});
 
 /* ---------- state ---------- */
-let awake = false, estop = false, mirror = false, attract = false, animating = false, ghostOpen = false;
+let awake = false, estop = false, mirror = false, attract = false, animating = false, ghostOpen = !GHOST_ON_REQUEST;
 let locked = store.get('locked', '0') === '1';
 let coreState = 'idle', btName = '', btBatt = '';
 let sens = +store.get('sens', 5), smoothPct = +store.get('smo', 65), gain = 1, alpha = 0.35;
@@ -254,9 +288,16 @@ $('sens').value = sens; $('smo').value = smoothPct; applySliders();
 $('sens').oninput = e => { sens = +e.target.value; store.set('sens', sens); applySliders(); };
 $('smo').oninput = e => { smoothPct = +e.target.value; store.set('smo', smoothPct); applySliders(); };
 
+$('shelf-tab').onclick = () => {
+  const open = $('shelf').classList.toggle('open');
+  $('shelf-tab').setAttribute('aria-expanded', open);
+  $('shelf-tab').textContent = 'Hardware and tuning ' + (open ? '▴' : '▾');
+};
+
 function paintJoints() {
   NAMES.forEach(n => {
-    $('v-' + n).textContent = Math.round(smooth[n]) + '°';
+    const v = Math.round(smooth[n]) + '°';
+    $('v-' + n).textContent = v; $('a-' + n).textContent = v;
     $('b-' + n).style.width = (smooth[n] / 180 * 100) + '%';
   });
   drawGhost();
@@ -282,10 +323,10 @@ function drawSpark() {
   c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, W, H);
   const ymax = Math.max(LAT_TARGET_MS * 1.5, ...latHist);
   const y = v => H - 3 - Math.min(v, ymax) / ymax * (H - 6);
-  c.strokeStyle = 'rgba(143,162,184,.45)'; c.lineWidth = 1; c.setLineDash([3, 3]);
+  c.strokeStyle = 'rgba(135,150,189,.45)'; c.lineWidth = 1; c.setLineDash([3, 3]);
   c.beginPath(); c.moveTo(0, y(LAT_TARGET_MS)); c.lineTo(W, y(LAT_TARGET_MS)); c.stroke(); c.setLineDash([]);
   if (latHist.length < 2) return;
-  c.strokeStyle = latHist[latHist.length - 1] > LAT_TARGET_MS ? '#ff4d5e' : '#46d6a8'; c.lineWidth = 1.6; c.lineJoin = 'round';
+  c.strokeStyle = latHist[latHist.length - 1] > LAT_TARGET_MS ? '#ff3344' : '#3ddc97'; c.lineWidth = 1.6; c.lineJoin = 'round';
   c.beginPath();
   latHist.forEach((v, i) => { const x = W - (latHist.length - 1 - i) / (HIST - 1) * W; i ? c.lineTo(x, y(v)) : c.moveTo(x, y(v)); });
   c.stroke();
@@ -302,64 +343,51 @@ function updateMetrics() {
 }
 setInterval(() => { drawSpark(); updateMetrics(); }, 200);
 
-/* ---------- hand model: only drawn once you ask for it ---------- */
-const FING = {   // base (inside the palm), angle in degrees clockwise from up, open length, width
-  thumb:  {x: 47,  y: 134, a: -50, L: 42, w: 18},
-  index:  {x: 56,  y: 106, a: -6,  L: 54, w: 15},
-  middle: {x: 74,  y: 102, a: 0,   L: 62, w: 16},
-  ring:   {x: 92,  y: 104, a: 5,   L: 55, w: 15},
-  pinky:  {x: 108, y: 112, a: 11,  L: 43, w: 13},
+/* ---------- 2D hand (original wireframe): filtered output solid, raw tracking dashed ---------- */
+const GH = {   // base point, rest angle (deg clockwise from up), segment lengths, curl direction
+  thumb:  {b:[40,116], a:-52, l:[26,22], k: 1},
+  index:  {b:[50,80],  a:-8,  l:[30,24], k: 1},
+  middle: {b:[68,76],  a:0,   l:[34,26], k: 1},
+  ring:   {b:[86,80],  a:7,   l:[30,24], k:-1},
+  pinky:  {b:[102,92], a:15,  l:[24,20], k:-1},
 };
-const tipOf = (f, v) => {                 // fingers stay straight; closing shortens them (foreshortening)
-  const len = f.L * (0.42 + 0.58 * v / 180), r = f.a * Math.PI / 180;
-  return [f.x + Math.sin(r) * len, f.y - Math.cos(r) * len];
-};
+const dir = d => [Math.sin(d * Math.PI / 180), -Math.cos(d * Math.PI / 180)];
+function drawHandShape(g, vals, color, dashed) {
+  g.strokeStyle = color; g.fillStyle = color; g.lineWidth = 2; g.lineJoin = g.lineCap = 'round';
+  g.setLineDash(dashed ? [3, 3] : []);
+  g.beginPath(); g.moveTo(42, 84); g.lineTo(112, 96); g.lineTo(102, 150); g.lineTo(52, 150); g.closePath(); g.stroke();
+  NAMES.forEach(n => {
+    const f = GH[n], c = 1 - vals[n] / 180;
+    const a1 = f.a + f.k * c * 70, a2 = a1 + f.k * c * 95, d1 = dir(a1), d2 = dir(a2);
+    const p1 = [f.b[0] + d1[0] * f.l[0], f.b[1] + d1[1] * f.l[0]];
+    const p2 = [p1[0] + d2[0] * f.l[1], p1[1] + d2[1] * f.l[1]];
+    g.beginPath(); g.moveTo(f.b[0], f.b[1]); g.lineTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]); g.stroke();
+    if (!dashed) [p1, p2].forEach(p => { g.beginPath(); g.arc(p[0], p[1], 2.2, 0, 7); g.fill(); });
+  });
+}
 function setGhost(on) {
   ghostOpen = on;
-  $('ghost-panel').dataset.open = on ? '1' : '0';
-  $('ghost-panel').setAttribute('aria-hidden', on ? 'false' : 'true');
+  $('ghost').dataset.open = on ? '1' : '0';
+  $('ghost').setAttribute('aria-hidden', on ? 'false' : 'true');
   if (on) drawGhost();
 }
 function drawGhost() {
   if (!ghostOpen) return;
   const g = ghostCtx;
-  g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, 160, 192);
-  const live = mirror && bleChar;
-  const edge = estop ? '#ff4d5e' : locked ? '#ffb020' : live ? '#46d6a8' : '#5aa9ff';
-  const fill = '#2a3f58';
-  g.lineCap = g.lineJoin = 'round';
-
-  // wrist
-  g.fillStyle = fill; g.strokeStyle = edge; g.lineWidth = 1.5;
-  g.beginPath(); g.roundRect(60, 150, 42, 38, 8); g.fill(); g.stroke();
-
-  // finger outlines, then palm, then finger fills so fingers and palm read as one silhouette
-  const draw = (stroke, extra) => NAMES.forEach(n => {
-    const f = FING[n], [tx, ty] = tipOf(f, smooth[n]);
-    g.strokeStyle = stroke; g.lineWidth = f.w + extra;
-    g.beginPath(); g.moveTo(f.x, f.y); g.lineTo(tx, ty); g.stroke();
-  });
-  draw(edge, 3);
-  g.fillStyle = fill; g.strokeStyle = edge; g.lineWidth = 1.5;
-  g.beginPath();
-  g.moveTo(41, 118); g.quadraticCurveTo(41, 100, 58, 100); g.lineTo(112, 106);
-  g.quadraticCurveTo(124, 108, 122, 122); g.lineTo(117, 146);
-  g.quadraticCurveTo(115, 153, 106, 153); g.lineTo(58, 153);
-  g.quadraticCurveTo(47, 153, 45, 142); g.closePath(); g.fill(); g.stroke();
-  draw(fill, 0);
-
-  // raw tracking: dashed centre line and tip marker, so smoothing is visible
-  if (performance.now() - lastHandAt < 300) {
-    g.strokeStyle = 'rgba(255,77,94,.9)'; g.fillStyle = 'rgba(255,77,94,.9)'; g.lineWidth = 1.3; g.setLineDash([3, 3]);
-    NAMES.forEach(n => {
-      const f = FING[n], [tx, ty] = tipOf(f, raw[n]);
-      g.beginPath(); g.moveTo(f.x, f.y); g.lineTo(tx, ty); g.stroke();
-      g.setLineDash([]); g.beginPath(); g.arc(tx, ty, 2.2, 0, 7); g.fill(); g.setLineDash([3, 3]);
-    });
-    g.setLineDash([]);
-  }
-  $('gh-status').textContent = estop ? 'Stopped' : locked ? 'Locked' : live ? 'Live to arm' : 'Simulated';
+  g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, 150, 170);
+  const col = estop ? '#FF3344' : locked ? '#FFB020' : '#00FF66';
+  const tracking = performance.now() - lastHandAt < 300;
+  drawHandShape(g, tracking ? raw : smooth, 'rgba(255,51,68,.55)', true);
+  drawHandShape(g, smooth, col, false);
+  g.setLineDash([]); g.font = '10px Courier New'; g.textAlign = 'left'; g.fillStyle = col;
+  g.fillText('GHOST HAND', 8, 14);
+  g.fillStyle = '#8796bd';
+  g.fillText(estop ? 'HALTED' : locked ? 'LOCKED' : (mirror && bleChar) ? 'LIVE → ARM' : 'SIMULATED', 8, 164);
+  g.textAlign = 'right';
+  g.fillStyle = 'rgba(255,51,68,.85)'; g.fillText('raw', 142, 14);
+  g.fillStyle = col; g.fillText('filtered', 142, 26);
 }
+ghostOpen ? setGhost(true) : setGhost(false);
 
 /* ---------- on-screen commands that work without the Python core ---------- */
 const MODEL = '(hand model|model|2 ?d|two ?d|ghost|virtual hand|twin|hand view)';
@@ -411,20 +439,27 @@ async function bleWrite(str) {            // payload must stay <= 20 bytes; reso
   catch (e) { console.warn('BLE write', e); pushLink(false); return false; }
   finally { bleBusy = false; }
 }
-function armLabel() { $('bt-txt').textContent = bleChar ? 'Arm linked' + (btBatt ? ' ' + btBatt : '') : 'Connect arm'; }
+function renderArm() {
+  const ok = !!bleChar, batt = btBatt || '--';
+  $('bt-dot').classList.toggle('ok', ok);
+  $('bt-txt').textContent = ok ? 'Arm linked' + (btBatt ? ' ' + btBatt : '') : 'Arm not connected';
+  $('bt-status').textContent = ok ? 'Connected' : 'Not connected';
+  $('bt-status').style.color = ok ? 'var(--ok)' : 'var(--danger)';
+  $('bt-device').textContent = ok ? btName : 'None';
+  $('bt-batt').textContent = batt;
+  NAMES.forEach(n => $('bat-' + n).textContent = batt);
+  $('bt-btn').textContent = ok ? 'Disconnect' : 'Connect to robot arm';
+}
 function setBt(ok, name = '') {
   btName = name; if (!ok) { bleChar = null; btBatt = ''; }
-  $('bt-dot').classList.toggle('ok', ok);
-  $('bt-btn').title = ok ? name : 'Pair the robot hand over Bluetooth';
-  armLabel();
   latHist.length = 0; linkHist.length = 0;   // don't mix vision-only and vision to Bluetooth samples
-  renderState();
+  renderArm(); renderState();
 }
 $('bt-btn').onclick = async () => {
   if (bleDev && bleDev.gatt.connected) { bleDev.gatt.disconnect(); return; }
   if (!navigator.bluetooth) return alert('Web Bluetooth is not supported in this browser.');
   try {
-    $('bt-txt').textContent = 'Pairing…';
+    $('bt-status').textContent = 'Pairing…';
     bleDev = await navigator.bluetooth.requestDevice({acceptAllDevices: true, optionalServices: [NUS, 'battery_service']});
     bleDev.addEventListener('gattserverdisconnected', () => setBt(false));
     const server = await bleDev.gatt.connect();
@@ -432,9 +467,11 @@ $('bt-btn').onclick = async () => {
     setBt(true, bleDev.name || 'Robot hand');
     try {
       const b = await (await server.getPrimaryService('battery_service')).getCharacteristic('battery_level');
-      btBatt = (await b.readValue()).getUint8(0) + '%'; armLabel();
+      const show = v => { btBatt = v.getUint8(0) + '%'; renderArm(); };
+      show(await b.readValue());
+      try { await b.startNotifications(); b.addEventListener('characteristicvaluechanged', e => show(e.target.value)); } catch {}
     } catch {}
-  } catch (e) { console.warn(e); setBt(false); $('bt-txt').textContent = 'Could not connect. Try again.'; }
+  } catch (e) { console.warn(e); setBt(false); $('bt-status').textContent = 'Connection failed'; }
 };
 
 /* ---------- Arm output: smoothing, rate limit, keepalive ---------- */
@@ -591,7 +628,7 @@ function hold(key, active, ms, done) {    // returns 0..1 progress, fires done()
 let fistFrames = 0;
 function resetGestures() { Object.keys(holds).forEach(k => holds[k] = null); fistFrames = 0; $('gesture-bar').hidden = true; }
 
-renderState(); paintJoints(); drawSpark(); updateMetrics();
+renderArm(); renderState(); paintJoints(); drawSpark(); updateMetrics();
 
 $('start').onclick = async () => {
   $('home').style.display = 'none';
@@ -621,8 +658,8 @@ $('start').onclick = async () => {
       if (!lm) { resetGestures(); return; }
       lastHandAt = performance.now();
       touch();
-      drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#5aa9ff', lineWidth: 3});
-      drawLandmarks(ctx, lm, {color: '#5aa9ff', fillColor: '#ffffff', radius: 3});
+      drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#4285F4', lineWidth: 3});
+      drawLandmarks(ctx, lm, {color: '#FF3344', fillColor: '#FFFFFF', radius: 4});
       if (animating) return;                  // let the sleep/lock animation own the output
 
       // metric 3D landmarks avoid the 16:9 distortion; fall back to image landmarks scaled by aspect
