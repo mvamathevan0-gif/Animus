@@ -3,314 +3,485 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PROJECT ANIMUS v3.2 — Cybernetic HUD</title>
+<title>Animus</title>
 <link rel="icon" href="data:,">
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
 <style>
 :root{
-  --bg:#03060c; --panel:#080e1a; --raise:#0f172a; --line:rgba(30,115,255,.22);
-  --text:#f0f4f8; --dim:#7e93ab; --accent:#1e73ff; --ok:#00e676; --warn:#ffab00; --danger:#ff1744;
-  --mono:'Courier New',Courier,monospace; --sans:'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif;
+  --bg:#03060e; --panel:#060d1b; --raise:#0c182f; --line:rgba(70,190,255,.15); --line2:rgba(70,190,255,.34);
+  --text:#e4edfb; --dim:#7f93b5; --accent:#38bdf8; --blue:#4b87ff; --ok:#3ddc97; --warn:#ffb020; --danger:#ff3344;
+  --glow:rgba(56,189,248,.32); --ease:cubic-bezier(.22,.8,.24,1);
+  --sans:'Segoe UI Variable Text','Segoe UI',Roboto,'Helvetica Neue',system-ui,sans-serif;
+  --mono:ui-monospace,'Cascadia Mono','SF Mono',Consolas,'Roboto Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 html,body{height:100%}
-body{background:var(--bg);background-image:radial-gradient(circle at 50% 50%,rgba(30,115,255,.08),transparent 85%),linear-gradient(rgba(255,255,255,.008) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.008) 1px,transparent 1px);background-size:100% 100%,32px 32px,32px 32px;color:var(--text);font:14px/1.45 var(--sans);font-variant-numeric:tabular-nums;overflow:hidden;display:flex;justify-content:center;align-items:center}
-button,input{font:inherit;color:inherit}
+body{background:radial-gradient(1100px 520px at 72% -12%,rgba(56,189,248,.07),transparent 62%),var(--bg);color:var(--text);font:14px/1.45 var(--sans);overflow:hidden;display:flex;justify-content:center;align-items:center}
+button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
-button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
-/* Start screen */
-#home{text-align:center;max-width:540px;padding:48px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px #000c}
-#home h1{font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:2px;color:var(--accent);margin-bottom:12px}
-#home p{color:var(--dim);font-size:15px;line-height:1.6;margin-bottom:32px}
-.primary{background:rgba(30,115,255,.15);color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:12px 28px;font-weight:600;letter-spacing:1px;font-family:var(--mono)}
-.primary:hover:not(:disabled){background:var(--accent);color:#fff}
+/* start screen */
+#home{text-align:center;max-width:520px;padding:0 24px}
+#home h1{font-size:44px;font-weight:600;letter-spacing:-.01em;margin-bottom:12px}
+#home p{color:var(--dim);font-size:16px;line-height:1.6;margin-bottom:32px}
+.primary{background:var(--accent);color:#021423;border:0;border-radius:8px;padding:11px 24px;font-weight:600}
+.primary:hover:not(:disabled){filter:brightness(1.12)}
 .primary:disabled{opacity:.4;cursor:not-allowed}
+.primary.wide{width:100%;margin-top:14px;padding:10px}
+.ghostbtn{background:transparent;border:1px solid var(--line2);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px}
+.ghostbtn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.ghostbtn:disabled{opacity:.4;cursor:not-allowed}
+.ghostbtn[aria-pressed="true"]{background:rgba(56,189,248,.14);border-color:var(--accent);color:var(--accent)}
 
-/* Header */
+/* header */
 #hud{display:none;position:absolute;inset:0;flex-direction:column}
-header{height:60px;flex:none;display:flex;align-items:center;gap:20px;padding:0 24px;background:rgba(8,14,26,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:25}
-.brand{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:2px;color:var(--accent)}
-.status{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;background:none;border:0;padding:0}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px var(--danger)}
-.dot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}
-.actions{margin-left:auto;display:flex;align-items:center;gap:16px}
-.switch{display:flex;align-items:center;gap:10px;background:none;border:0;font-size:12px;font-family:var(--mono)}
-.track{width:36px;height:20px;border-radius:999px;background:var(--raise);position:relative;transition:background .2s}
-.track::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:transform .2s}
-.switch[aria-pressed="true"] .track{background:var(--accent)}
-.switch[aria-pressed="true"] .track::after{transform:translateX(16px)}
-.stop{background:rgba(255,23,68,.12);color:var(--danger);border:1px solid var(--danger);border-radius:8px;padding:6px 14px;font-weight:700;font-family:var(--mono);font-size:12px}
-.stop:hover,.stop.on{background:var(--danger);color:#fff}
+header{min-height:56px;flex:none;display:flex;align-items:center;gap:20px;padding:6px 24px;border-bottom:1px solid var(--line);background:rgba(6,13,27,.7);flex-wrap:wrap}
+.brand{font-size:17px;font-weight:650;letter-spacing:.01em}
+.status{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:12.5px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#2a3b5e;flex:none}
+.dot.ok{background:var(--ok)}
+.dot.live{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.dot.bad{background:var(--danger)}
+.actions{margin-left:auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.switch{display:flex;align-items:center;gap:9px;background:none;border:0;font-size:13px;color:var(--text)}
+.track{width:34px;height:19px;border-radius:999px;background:var(--raise);border:1px solid var(--line);position:relative;transition:background .2s}
+.track::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--dim);transition:transform .2s,background .2s}
+.switch[aria-pressed="true"] .track{background:rgba(56,189,248,.25);border-color:var(--accent)}
+.switch[aria-pressed="true"] .track::after{transform:translateX(15px);background:var(--accent)}
+.switch:disabled{opacity:.4;cursor:not-allowed}
+.stop{background:var(--danger);color:#fff;border:0;border-radius:8px;padding:8px 16px;font-weight:650}
+.stop:hover{filter:brightness(1.08)}
+.stop.on{background:#fff;color:var(--danger)}
 
-/* Hardware & Tuning Slide-down Drawer */
-#shelf-tab{position:absolute;top:60px;left:50%;transform:translateX(-50%);background:rgba(8,14,26,.96);border:1px solid var(--line);border-top:none;padding:5px 22px;border-radius:0 0 10px 10px;font-size:11px;font-family:var(--mono);color:var(--accent);z-index:35;letter-spacing:1px}
-#shelf{position:absolute;top:60px;left:50%;transform:translateX(-50%);width:780px;max-width:94vw;background:rgba(8,14,26,.98);backdrop-filter:blur(12px);border:1px solid var(--line);border-top:none;border-radius:0 0 14px 14px;box-shadow:0 20px 40px #000e;z-index:30;max-height:0;overflow:hidden;padding:0 24px;transition:max-height .35s ease,padding .35s ease}
-#shelf.open{max-height:340px;padding:24px;border-color:var(--accent)}
-.shelf-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-.sec-title{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:4px}
-.stat{font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;justify-content:space-between;margin-bottom:8px}
-.stat span{color:var(--text)}
-#shelf .primary{width:100%;margin-top:12px;padding:8px;font-size:11px}
-.ctl{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:12px}
-.ctl-top{display:flex;justify-content:space-between}
-.ctl-top b{color:var(--accent)}
-.ctl input{accent-color:var(--accent);width:100%;cursor:pointer}
+/* top hardware shelf */
+#shelf-tab{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:35;background:var(--panel);border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;padding:4px 18px;font-size:12px;color:var(--accent)}
+#shelf-tab:hover{background:var(--accent);color:#021423}
+#shelf{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:30;width:min(880px,94vw);max-height:0;overflow:hidden;padding:0 26px;background:rgba(6,13,27,.98);border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px;box-shadow:0 24px 48px rgba(0,0,0,.6)}
+#shelf.open{max-height:440px;padding:44px 26px 24px;border-color:var(--line2)}
+@media(prefers-reduced-motion:no-preference){#shelf{transition:max-height .35s ease,padding .35s ease}}
+.shelf-grid{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:28px}
+h2{font-size:13px;font-weight:600;color:var(--dim);margin-bottom:12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px}
+.kv dt{color:var(--dim)}.kv dd{text-align:right;font-weight:500;font-family:var(--mono)}
+.frows{display:grid;grid-template-columns:1fr auto auto;gap:7px 20px;font-size:13px}
+.frows .h{color:var(--dim);font-size:12px}
+.frows span:nth-child(3n+2),.frows span:nth-child(3n){text-align:right;font-family:var(--mono)}
+.slider{display:grid;grid-template-columns:1fr auto;row-gap:6px;margin-bottom:16px;font-size:13px}
+.slider:last-child{margin-bottom:0}
+.slider output{color:var(--dim);font-family:var(--mono)}
+.slider input{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.note{margin-top:12px;font-size:12px;color:var(--dim);line-height:1.5}
 
-/* Main workspace */
-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(340px,1fr);gap:20px;padding:20px}
-.stage{display:flex;flex-direction:column;gap:16px;min-height:0}
-.video{position:relative;flex:1;min-height:0;border-radius:16px;overflow:hidden;background:#020408;border:1px solid var(--line);display:flex;justify-content:center;align-items:center;box-shadow:0 10px 30px #0008}
+/* layout */
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);gap:24px;padding:24px;overflow:hidden}
+.stage{grid-column:1;grid-row:1;display:flex;flex-direction:column;gap:16px;min-height:0}
+.video{position:relative;flex:1;min-height:0;border-radius:14px;overflow:hidden;background:#02050b;border:1px solid var(--line);display:flex;justify-content:center;align-items:center;transition:border-color .4s,box-shadow .4s}
+.video::before,.video::after{content:'';position:absolute;width:14px;height:14px;border:0 solid var(--accent);pointer-events:none;z-index:6;opacity:.7}
+.video::before{top:8px;left:8px;border-width:1px 0 0 1px}
+.video::after{bottom:8px;right:8px;border-width:0 1px 1px 0}
 video{display:none}
-#out{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.state{position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(8,14,26,.85);backdrop-filter:blur(6px);font-size:12px;font-family:var(--mono);font-weight:600;border:1px solid var(--line)}
+#out{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);transition:opacity .5s var(--ease)}
+.video.hide-cam #out{opacity:0}
+.video.hide-cam{background:radial-gradient(600px 360px at 30% 50%,rgba(56,189,248,.08),transparent 70%),#02050b}
+.pills{position:absolute;top:16px;left:16px;display:flex;gap:8px;z-index:8}
+.state{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(3,6,14,.8);backdrop-filter:blur(6px);border:1px solid var(--line);font-size:13px;font-weight:600}
 .state::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--dim)}
-.state.ok{color:var(--ok)}.state.ok::before{background:var(--ok);box-shadow:0 0 6px var(--ok)}
-.state.warn{color:var(--warn)}.state.warn::before{background:var(--warn);box-shadow:0 0 6px var(--warn)}
-.state.danger{color:var(--danger)}.state.danger::before{background:var(--danger);box-shadow:0 0 6px var(--danger)}
-#gesture-bar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);min-width:240px;padding:8px 14px;border-radius:10px;background:rgba(8,14,26,.9);backdrop-filter:blur(6px);font-size:12px;font-family:var(--mono);border:1px solid var(--accent)}
-#gesture-bar i{display:block;height:4px;border-radius:2px;background:var(--raise);margin-top:6px;overflow:hidden}
+.state.ok::before{background:var(--ok)}
+.state.awake{color:var(--accent);border-color:var(--line2);box-shadow:0 0 18px var(--glow)}.state.awake::before{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.state.warn{color:var(--warn)}.state.warn::before{background:var(--warn)}
+.state.danger{color:var(--danger)}.state.danger::before{background:var(--danger)}
+body.awake .video{border-color:var(--line2);box-shadow:0 0 0 1px rgba(56,189,248,.18),0 0 34px rgba(56,189,248,.14)}
+@media(prefers-reduced-motion:no-preference){.video.flash{animation:flash .9s ease-out}@keyframes flash{0%{box-shadow:0 0 0 2px var(--accent),0 0 70px var(--glow)}100%{box-shadow:0 0 0 1px rgba(56,189,248,.18),0 0 34px rgba(56,189,248,.14)}}}
+#notice{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:9;max-width:min(560px,86%);padding:10px 16px;border-radius:10px;background:rgba(40,12,16,.92);border:1px solid var(--danger);font-size:13px;text-align:center}
+#gesture-bar{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:9;min-width:240px;padding:10px 16px;border-radius:10px;background:rgba(3,6,14,.9);border:1px solid var(--line2);font-size:13px}
+#gesture-bar i{display:block;height:3px;border-radius:2px;background:var(--raise);margin-top:8px;overflow:hidden}
 #gesture-bar b{display:block;height:100%;width:0;background:var(--accent)}
 
-/* Old-style 2D Ghost Hand Panel */
-#ghost-panel{position:absolute;right:16px;bottom:16px;width:176px;padding:10px 12px;border-radius:12px;background:rgba(8,14,26,.92);backdrop-filter:blur(8px);border:1px solid var(--line);opacity:0;visibility:hidden;transform:translateY(10px) scale(.98);pointer-events:none}
-#ghost-panel[data-open="1"]{opacity:1;visibility:visible;transform:none}
-@media(prefers-reduced-motion:no-preference){#ghost-panel{transition:opacity .25s,transform .25s,visibility .25s}}
-.gh-head{display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);color:var(--dim);margin-bottom:4px}
-.gh-head b{color:var(--text)}
-#ghost{display:block;width:150px;height:170px;margin:0 auto}
-.gh-key{display:flex;gap:10px;justify-content:center;font-size:10px;font-family:var(--mono);color:var(--dim);margin-top:4px}
-.gh-key span::before{content:'';display:inline-block;width:12px;border-top:2px solid var(--accent);margin-right:4px;vertical-align:middle}
-.gh-key span+span::before{border-top:2px dashed var(--danger)}
+/* 2D hand, 3D stage hand, show overlay */
+#ghost{position:absolute;left:calc(100% - 166px);top:calc(100% - 186px);width:150px;height:170px;background:rgba(3,6,14,.84);border:1px solid var(--line);border-radius:10px;opacity:0;visibility:hidden;pointer-events:none;z-index:7}
+#ghost[data-open="1"]{opacity:1;visibility:visible}
+@media(prefers-reduced-motion:no-preference){#ghost{transition:left .65s var(--ease),top .65s var(--ease),width .65s var(--ease),height .65s var(--ease),opacity .3s,visibility .3s}}
+.video.s2d #ghost{left:56px;top:calc(50% - 170px);width:300px;height:340px}
+#s3d{position:absolute;left:4%;top:6%;width:46%;height:88%;opacity:0;visibility:hidden;touch-action:none;z-index:7;transition:opacity .5s}
+.video.s3d #s3d{opacity:1;visibility:visible}
+#show-overlay{position:absolute;right:6%;top:50%;transform:translateY(-50%);width:34%;min-width:220px;opacity:0;visibility:hidden;z-index:7;transition:opacity .5s}
+.video.hide-cam #show-overlay{opacity:1;visibility:visible}
+#show-title{font-size:clamp(26px,3.4vw,46px);font-weight:700;line-height:1.1}
+#show-sub{margin-top:8px;color:var(--dim);font-size:14px}
+.thin{height:3px;border-radius:2px;background:var(--raise);margin-top:16px;overflow:hidden}
+.thin b{display:block;height:100%;width:0;background:var(--accent)}
+#rec-overlay{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(3,6,14,.55);pointer-events:none;text-align:center}
+#rec-big{font-family:var(--mono);font-size:clamp(54px,9vw,120px);font-weight:600;line-height:1;color:var(--text)}
+#rec-label{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:14px}
+#rec-label::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--danger)}
+#rec-overlay .thin{width:min(320px,60%)}
+#rec-overlay .thin b{background:var(--danger)}
 
-/* Telemetry metrics */
-.metrics{flex:none;display:flex;align-items:center;gap:24px;padding:0 4px}
-#spark{width:150px;height:36px;flex:none}
-.stat-box b{display:block;font-size:18px;font-family:var(--mono);font-weight:700;color:var(--text);line-height:1.1}
-.stat-box span{font-size:11px;color:var(--dim);font-family:var(--mono)}
+/* telemetry */
+.metrics{flex:none;display:flex;align-items:center;gap:28px;padding:0 4px;flex-wrap:wrap}
+#spark{width:160px;height:40px;flex:none}
+.stat b{display:block;font-family:var(--mono);font-size:19px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--dim)}
 
-/* Sidebar */
-.side{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+/* right-hand panels */
+.panel{grid-column:2;grid-row:1;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(120,210,255,.07);transition:transform .6s var(--ease),opacity .45s var(--ease),border-color .5s,box-shadow .5s,visibility 0s linear 0s}
+.panel.out{transform:translateX(calc(100% + 40px));opacity:0;visibility:hidden;pointer-events:none;transition:transform .6s var(--ease),opacity .45s var(--ease),visibility 0s linear .6s}
+.side{display:grid;grid-template-rows:minmax(0,1fr)}
+body.show .side{border-color:var(--line2);box-shadow:inset 0 1px 0 rgba(120,210,255,.1),0 0 40px rgba(56,189,248,.1)}
+.view{grid-area:1/1;display:flex;flex-direction:column;min-height:0;transition:opacity .45s var(--ease),transform .55s var(--ease),visibility 0s linear 0s}
+.view-show{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(16px) scale(.985);overflow-y:auto;transition:opacity .45s var(--ease),transform .55s var(--ease),visibility 0s linear .55s}
+body.show .view-normal{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-16px) scale(.985);transition:opacity .45s var(--ease),transform .55s var(--ease),visibility 0s linear .55s}
+body.show .view-show{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition:opacity .45s var(--ease) .1s,transform .55s var(--ease) .1s,visibility 0s linear 0s}
 .sec{padding:18px 20px;border-bottom:1px solid var(--line)}
-.sec h2{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:12px}
-.joint-row{display:grid;grid-template-columns:64px 1fr 44px;gap:12px;align-items:center;margin-bottom:10px}
-.joint-row:last-child{margin-bottom:0}
-.joint-row span{font-family:var(--mono);font-size:11px;color:var(--dim)}
-.joint-row b{text-align:right;font-family:var(--mono);font-size:11px;color:var(--text)}
-.bar{height:6px;border-radius:3px;background:var(--raise);overflow:hidden}
-.bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--accent),var(--ok))}
-details{font-size:12px;color:var(--dim);font-family:var(--mono)}
+.row{display:grid;grid-template-columns:60px 1fr 44px;gap:12px;align-items:center;margin-bottom:9px}
+.row:last-child{margin-bottom:0}
+.row b{text-align:right;font-family:var(--mono);font-weight:500;color:var(--dim);font-size:13px}
+.bar{height:5px;border-radius:3px;background:var(--raise);overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--blue),var(--accent))}
+details{font-size:13px;color:var(--dim)}
 summary{cursor:pointer;padding:12px 20px;border-bottom:1px solid var(--line);list-style:none}
 summary::-webkit-details-marker{display:none}
 summary:hover{color:var(--text)}
-details ul{list-style:none;padding:12px 20px;border-bottom:1px solid var(--line);line-height:1.8}
-details li b{display:inline-block;width:24px;color:var(--accent)}
-.assistant{flex:1;min-height:0;display:flex;flex-direction:column;padding:18px 20px;border:0}
+details ul{list-style:none;padding:12px 20px;border-bottom:1px solid var(--line);line-height:1.95}
+details li b{display:inline-block;width:44px;color:var(--text);font-weight:500}
+.assistant{flex:1;min-height:0;display:flex;flex-direction:column;padding:18px 20px;border:0;transition:box-shadow .5s,background .5s}
+body.awake .assistant{background:linear-gradient(180deg,rgba(56,189,248,.06),transparent 55%);box-shadow:inset 2px 0 0 var(--accent)}
 .assistant .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 .assistant .head h2{margin:0}
-#vstatus{font-size:11px;font-family:var(--mono);color:var(--dim)}
-.tbox{font-size:14px;line-height:1.5;word-break:break-word;min-height:40px;font-family:var(--mono)}
-.assistant.asleep .tbox{color:var(--dim)}
+#vstatus{font-size:12px;color:var(--dim)}
+body.awake #vstatus{color:var(--accent)}
+.tbox{font-size:15px;line-height:1.5;word-break:break-word;min-height:44px;padding:4px 8px;margin:0 -8px;border-radius:6px;transition:background .4s}
+.tbox mark{background:rgba(56,189,248,.28);color:#fff;border-radius:3px;padding:0 3px}
+.tbox.hl{background:rgba(56,189,248,.14);box-shadow:inset 2px 0 0 var(--accent)}
+.assistant.dim .tbox{color:var(--dim)}
 .assistant.locked{opacity:.5}
-.rbox{margin-top:10px;padding-left:10px;border-left:2px solid var(--accent);color:var(--dim);font-size:12px;line-height:1.5;overflow-y:auto;white-space:pre-wrap;flex:1;min-height:0;font-family:var(--mono)}
+#hearing{min-height:18px;font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rbox{margin-top:10px;padding-left:12px;border-left:2px solid var(--accent);color:var(--dim);font-size:13px;line-height:1.55;overflow-y:auto;white-space:pre-wrap;flex:1;min-height:0}
+.rbox[data-src="error"]{border-color:var(--danger);color:#ffb3ba}
+#reply-src{font-size:11.5px;color:var(--dim);margin-top:10px}
+#conn-note{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.5}
 .inrow{display:flex;gap:8px;margin-top:auto;padding-top:12px}
-.inrow input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:12px}
-.inrow input::placeholder{color:#4a5f78}
-.inrow .primary{padding:8px 16px;font-size:12px}
+.inrow input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.inrow input:focus{border-color:var(--accent)}
+.inrow input::placeholder{color:#4a5c82}
+.inrow .primary{padding:9px 16px}
 
-/* Idle attract mode */
-#attract{position:absolute;inset:60px 0 0 0;z-index:20;background:rgba(3,6,12,.9);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;text-align:center;pointer-events:none}
-#attract h2{font-family:var(--mono);font-size:clamp(20px,3.5vw,44px);font-weight:700;color:var(--accent);letter-spacing:2px}
-.slide{min-width:min(400px,86vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px;text-align:left;font-family:var(--mono)}
-.slide h3{font-size:11px;color:var(--dim);letter-spacing:2px;margin-bottom:10px}
-.slide dl{display:grid;grid-template-columns:auto 1fr;gap:6px 24px;font-size:13px}
-.slide dd{text-align:right;color:var(--accent)}
+/* pose runner */
+.view-show .sec:last-child{border-bottom:0}
+.poses{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.chip{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.chip button{background:none;border:0;padding:8px 10px;font-size:13px}
+.chip button:first-child{flex:1;text-align:left}
+.chip button:hover{background:rgba(56,189,248,.14);color:var(--accent)}
+.chip button+button{border-left:1px solid var(--line);color:var(--dim);width:34px}
+#seq{list-style:none;display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+#seq li{display:grid;grid-template-columns:22px 1fr auto auto auto;gap:6px;align-items:center;padding:5px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+#seq li.on{border-color:var(--accent);background:rgba(56,189,248,.12);box-shadow:0 0 14px var(--glow)}
+#seq li.empty{display:block;color:var(--dim);border-style:dashed}
+#seq .n{font-family:var(--mono);color:var(--dim);font-size:12px}
+#seq button{background:none;border:0;color:var(--dim);width:26px;height:26px;border-radius:6px}
+#seq button:hover{background:rgba(56,189,248,.14);color:var(--accent)}
+.ctlrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.ctlrow select{background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:7px 8px;font-size:13px}
+.recstat{font-size:12px;color:var(--dim);margin-top:4px;min-height:18px}
 
-@media(max-width:900px){body{overflow:auto;display:block}#hud{position:static;min-height:100vh}main{grid-template-columns:1fr;padding:16px}.video{flex:none;aspect-ratio:16/9}}
+/* 3D hand panel */
+.hand3d{display:flex;flex-direction:column}
+.h3-head{display:flex;justify-content:space-between;align-items:baseline;padding:16px 20px 8px}
+.h3-head h2{margin:0}
+#h3d-src{font-size:12px;color:var(--accent);font-family:var(--mono)}
+#h3d{flex:1;min-height:0;width:100%;touch-action:none;cursor:grab}
+.h3-foot{padding:10px 20px 18px;border-top:1px solid var(--line)}
+.h3-foot .note{margin:0 0 10px}
+#tr2{font-size:14px;min-height:20px;margin-bottom:6px}
+#rp2{font-size:12.5px;color:var(--dim);max-height:64px;overflow-y:auto;white-space:pre-wrap;margin-bottom:8px}
+#rp2[data-src="error"]{color:#ffb3ba}
+
+/* idle demo + toast */
+#attract{position:absolute;inset:56px 0 0 0;z-index:40;background:rgba(3,6,14,.82);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:24px;text-align:center;pointer-events:none}
+#attract h2{font-size:clamp(22px,3.8vw,50px);font-weight:700;line-height:1.2;max-width:20ch;color:var(--text);margin:0}
+.slide{min-width:min(420px,88vw);background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:20px 26px;text-align:left}
+@media(prefers-reduced-motion:no-preference){.slide{transition:opacity .35s}#attract h2{animation:breathe 3s ease-in-out infinite}@keyframes breathe{50%{opacity:.7}}}
+.slide h3{font-size:13px;font-weight:600;color:var(--dim);margin-bottom:12px}
+.slide dl{display:grid;grid-template-columns:auto 1fr;gap:6px 28px}
+.slide dd{text-align:right;font-weight:600;font-family:var(--mono)}
+#toast{position:absolute;left:50%;bottom:28px;transform:translate(-50%,16px);z-index:60;max-width:min(560px,90vw);padding:10px 18px;border-radius:10px;background:rgba(6,13,27,.96);border:1px solid var(--line2);box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:13px;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:900px){
+  body{overflow:auto;display:block}
+  #hud{position:static;min-height:100vh}
+  header{gap:12px;padding:10px 16px}
+  #shelf-tab,#shelf{position:fixed;top:auto;bottom:0;border-radius:12px 12px 0 0}
+  #shelf.open{bottom:30px;max-height:80vh;overflow:auto}
+  .shelf-grid{grid-template-columns:1fr}
+  main{grid-template-columns:1fr;grid-template-rows:auto;padding:16px;overflow:visible}
+  .stage,.panel{grid-column:1;grid-row:auto}
+  .video{flex:none;aspect-ratio:16/9}
+  .panel.out{display:none}
+  .view-show{overflow:visible}
+}
 </style>
 </head>
 <body>
 <div id="home">
-  <h1>PROJECT ANIMUS v3.2</h1>
-  <p>Advanced multimodal neural interface. Synchronized hand tracking, voice core, and low-latency BLE arm robotics.</p>
-  <button class="primary" id="start">LAUNCH HUD</button>
+  <h1>Animus</h1>
+  <p>Control a robotic hand with your own. Hand tracking, voice, and a live link to the arm.</p>
+  <button class="primary" id="start">Launch</button>
 </div>
 
 <div id="hud">
   <header>
-    <div class="brand">ANIMUS v3.2</div>
+    <div class="brand">Animus</div>
     <div class="status"><i class="dot" id="core-dot"></i><span id="core-txt">Voice core offline</span></div>
+    <div class="status"><i class="dot" id="bt-dot"></i><span id="bt-txt">Arm not connected</span></div>
+    <div class="status"><i class="dot" id="wake-dot"></i><span id="wake-txt">Wake word off</span></div>
     <div class="actions">
-      <button class="switch" id="mirror" type="button" aria-pressed="false"><span class="track"></span><span>MIRROR</span></button>
-      <button class="stop" id="estop" type="button" aria-pressed="false">E-STOP</button>
+      <button class="switch" id="offlinebtn" type="button" aria-pressed="false" title="Test or demo offline mode"><span class="track"></span><span>Offline</span></button>
+      <button class="switch" id="showmode" type="button" aria-pressed="false" title="Pose runner and live record"><span class="track"></span><span>Show mode</span></button>
+      <button class="switch" id="mirror" type="button" aria-pressed="false"><span class="track"></span><span>Mirror</span></button>
+      <button class="stop" id="estop" type="button" aria-pressed="false">Emergency stop</button>
     </div>
   </header>
 
-  <button id="shelf-tab" type="button">HARDWARE & TUNING ▾</button>
-  <div id="shelf">
+  <button id="shelf-tab" type="button" aria-expanded="false" aria-controls="shelf">Hardware and tuning ▾</button>
+  <div id="shelf" role="region" aria-label="Hardware and tuning">
     <div class="shelf-grid">
       <div>
-        <div class="sec-title">BLE LINK</div>
-        <div class="stat">STATUS: <span id="bt-status" style="color:var(--danger)">DISCONNECTED</span></div>
-        <div class="stat">DEVICE: <span id="bt-device">NONE</span></div>
-        <div class="stat">BATTERY: <span id="bt-batt">--</span></div>
-        <button class="primary" id="bt-btn" type="button">CONNECT ROBOT ARM</button>
+        <h2>Robot arm</h2>
+        <dl class="kv">
+          <dt>Status</dt><dd id="bt-status" style="color:var(--danger)">Not connected</dd>
+          <dt>Device</dt><dd id="bt-device">None</dd>
+          <dt>Battery</dt><dd id="bt-batt">--</dd>
+        </dl>
+        <button class="primary wide" id="bt-btn" type="button">Connect to robot arm</button>
       </div>
       <div>
-        <div class="sec-title">TRACKING TUNING</div>
-        <div class="ctl">
-          <div class="ctl-top"><label for="sens">SENSITIVITY</label><b id="sens-v">1.0×</b></div>
-          <input type="range" id="sens" min="1" max="10" step="1" value="5">
-        </div>
-        <div class="ctl">
-          <div class="ctl-top"><label for="smo">SMOOTHING</label><b id="smo-v">65%</b></div>
-          <input type="range" id="smo" min="0" max="90" step="5" value="65">
-        </div>
+        <h2>Fingers</h2>
+        <div class="frows" id="frows"><span class="h">Finger</span><span class="h">Servo</span><span class="h">Battery</span></div>
+        <p class="note">All servos share one battery pack, so each finger shows the pack level reported by the arm.</p>
       </div>
       <div>
-        <div class="sec-title">FINGER BATTERY</div>
-        <div class="stat">THUMB: <span id="t-batt">--</span></div>
-        <div class="stat">INDEX: <span id="i-batt">--</span></div>
-        <div class="stat">MIDDLE: <span id="m-batt">--</span></div>
-        <div class="stat">RING: <span id="r-batt">--</span></div>
-        <div class="stat">PINKY: <span id="p-batt">--</span></div>
+        <h2>Tuning</h2>
+        <div class="slider"><label for="sens">Sensitivity</label><output id="sens-v">1.0×</output><input type="range" id="sens" min="1" max="10" step="1" value="5"></div>
+        <div class="slider"><label for="smo">Smoothness</label><output id="smo-v">65%</output><input type="range" id="smo" min="0" max="90" step="5" value="65"></div>
       </div>
     </div>
   </div>
 
   <main>
     <section class="stage">
-      <div class="video">
+      <div class="video" id="video">
         <video id="webcam" playsinline muted></video>
         <canvas id="out" width="1280" height="720"></canvas>
-        <div class="state" id="state">Asleep</div>
+        <div class="pills"><div class="state" id="state">Asleep</div><div class="state warn" id="netchip" hidden>Offline mode</div></div>
+        <div id="notice" hidden></div>
         <div id="gesture-bar" hidden><span id="gesture-txt"></span><i><b id="gesture-fill"></b></i></div>
-        <div id="ghost-panel" data-open="0" aria-hidden="true">
-          <div class="gh-head"><b>2D Hand Model</b><span id="gh-status">Simulated</span></div>
-          <canvas id="ghost" width="300" height="340" aria-label="Virtual hand twin"></canvas>
-          <div class="gh-key"><span>Filtered</span><span>Raw</span></div>
-        </div>
+        <canvas id="ghost" width="600" height="680" data-open="0" aria-hidden="true" aria-label="2D hand showing the filtered servo output"></canvas>
+        <canvas id="s3d" aria-label="3D hand"></canvas>
+        <div id="show-overlay"><div id="show-title">Live hand</div><div id="show-sub">Move your hand, or run a pose.</div><div class="thin"><b id="show-bar"></b></div></div>
+        <div id="rec-overlay" hidden><div id="rec-big">3</div><div id="rec-label">Get ready</div><div class="thin"><b id="rec-bar"></b></div></div>
       </div>
       <div class="metrics">
-        <canvas id="spark" width="300" height="72" aria-label="Latency graph"></canvas>
-        <div class="stat-box"><b id="m-fps">0</b><span>FPS</span></div>
-        <div class="stat-box"><b id="m-lat">0</b><span>ms latency</span></div>
-        <div class="stat-box"><b id="m-p95">0</b><span>ms p95</span></div>
-        <div class="stat-box"><b id="m-drop">n/a</b><span>drop rate</span></div>
+        <canvas id="spark" width="320" height="80" aria-label="Latency over the last 60 samples"></canvas>
+        <div class="stat"><b id="m-fps">0</b><span>frames per second</span></div>
+        <div class="stat"><b id="m-lat">0</b><span>ms latency, <i id="m-src" style="font-style:normal">vision only</i></span></div>
+        <div class="stat"><b id="m-p95">0</b><span>ms, 95th percentile</span></div>
+        <div class="stat"><b id="m-drop">n/a</b><span>writes dropped</span></div>
       </div>
     </section>
 
-    <aside class="side">
-      <div class="sec"><h2>JOINT ANGLES</h2><div id="joints"></div></div>
-      <details>
-        <summary>Gesture Command Guide</summary>
-        <ul>
-          <li><b>✌</b> Hold 3s to wake or unlock</li>
-          <li><b>✋</b> Hold 3s to engage lock</li>
-          <li><b>✊</b> Instant Emergency Stop</li>
-          <li><b>👍</b> Enable arm mirroring</li>
-          <li><b>👎</b> Disable arm mirroring</li>
-        </ul>
-      </details>
-      <div class="sec assistant asleep" id="assistant">
-        <div class="head"><h2>VOICE CORE</h2><span id="vstatus">Asleep</span></div>
-        <div class="tbox" id="transcript">Hold ✌ for 3s to wake, or say "Hey Jarvis". Try "show hand".</div>
-        <div class="rbox" id="reply" hidden></div>
-        <div class="inrow">
-          <input type="text" id="cmd" placeholder="Ask ANIMUS..." autocomplete="off">
-          <button class="primary" id="send" type="button">SEND</button>
+    <aside class="side panel" id="side">
+      <div class="view view-normal">
+        <div class="sec"><h2>Fingers</h2><div id="joints"></div></div>
+        <details>
+          <summary>Gesture guide</summary>
+          <ul>
+            <li><b>✌</b>Wake or unlock, instantly</li>
+            <li><b>🤙</b>Show mode on</li>
+            <li><b>✋</b>Hold 3 seconds to lock</li>
+            <li><b>✊</b>Emergency stop, instantly</li>
+            <li><b>👍</b>Mirror on, while awake</li>
+            <li><b>👎</b>Mirror off</li>
+          </ul>
+        </details>
+        <div class="sec assistant dim" id="assistant">
+          <div class="head"><h2>Assistant</h2><span id="vstatus">Asleep</span></div>
+          <div class="tbox" id="transcript">Show ✌, or say “Hey Animus”.</div>
+          <div id="hearing" aria-live="off"></div>
+          <div id="reply-src" hidden></div>
+          <div class="rbox" id="reply" hidden></div>
+          <div id="conn-note"></div>
+          <div class="inrow">
+            <input type="text" id="cmd" placeholder="Ask or give a command" autocomplete="off" aria-label="Command">
+            <button class="primary" id="send" type="button">Send</button>
+          </div>
         </div>
+      </div>
+
+      <div class="view view-show">
+        <div class="sec">
+          <h2>Pose runner</h2>
+          <div class="poses" id="poses"></div>
+          <p class="note">Click a pose to move the hand. Use + to add it to the sequence.</p>
+        </div>
+        <div class="sec">
+          <h2>Sequence</h2>
+          <ol id="seq"></ol>
+          <div class="ctlrow">
+            <button class="primary" id="play-seq" type="button">Play</button>
+            <button class="ghostbtn" id="loop" type="button" aria-pressed="false">Loop</button>
+            <button class="ghostbtn" id="clear-seq" type="button">Clear</button>
+          </div>
+          <div class="slider"><label for="step-ms">Time per pose</label><output id="step-v">1.0 s</output><input type="range" id="step-ms" min="400" max="3000" step="100" value="1000"></div>
+        </div>
+        <div class="sec">
+          <h2>Live record</h2>
+          <div class="ctlrow">
+            <select id="rec-dur" aria-label="Recording length"><option value="3">3 s</option><option value="5" selected>5 s</option><option value="8">8 s</option></select>
+            <button class="primary" id="rec-btn" type="button">Record</button>
+            <button class="ghostbtn" id="rec-play" type="button" disabled>Play</button>
+            <button class="ghostbtn" id="rec-add" type="button" disabled>Add to sequence</button>
+          </div>
+          <div class="recstat" id="rec-status">Records your hand through the camera after a 3 second countdown.</div>
+        </div>
+        <div class="sec"><button class="ghostbtn" id="exit-show" type="button">Exit show mode</button></div>
+      </div>
+    </aside>
+
+    <aside class="hand3d panel out" id="hand3d">
+      <div class="h3-head"><h2>3D hand, offline mode</h2><span id="h3d-src">Servo output</span></div>
+      <canvas id="h3d" aria-label="3D hand that follows your hand. Drag to rotate, double-click to reset."></canvas>
+      <div class="h3-foot">
+        <p class="note" id="offline-why">No internet. Cloud AI and the browser wake word are paused. Tracking, Bluetooth and local commands still work.</p>
+        <div id="tr2">Show ✌ to wake.</div>
+        <div id="rp2" hidden></div>
+        <div class="inrow"><input type="text" id="cmd2" placeholder="Ask or give a command" autocomplete="off" aria-label="Command"><button class="primary" id="send2" type="button">Send</button></div>
       </div>
     </aside>
   </main>
 
   <div id="attract" hidden>
     <h2>IDLE DEMO — SHOW HAND TO TAKE CONTROL</h2>
-    <div class="slide"><h3 id="slide-title"></h3><dl id="slide-body"></dl></div>
+    <div class="slide" id="slide"><h3 id="slide-title"></h3><dl id="slide-body"></dl></div>
   </div>
+  <div id="toast" role="status" aria-live="polite"></div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
+const cap = s => s[0].toUpperCase() + s.slice(1);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const NAMES = ['thumb','index','middle','ring','pinky'];
 const JOINTS = {thumb:[2,3,4], index:[5,6,8], middle:[9,10,12], ring:[13,14,16], pinky:[17,18,20]};
-const RANGE = {thumb:[125,172], index:[70,170], middle:[70,170], ring:[70,170], pinky:[70,170]};
-const SEND_MS = 50, KEEPALIVE_MS = 250, ATTRACT_MS = 30000, AUTO_SLEEP_MS = 60000;
-const FIST_ESTOP_IN_MIRROR = true, SLEEP_POSE = 0, SLEEP_MOVES_ARM = true;
+const RANGE = {thumb:[125,172], index:[70,170], middle:[70,170], ring:[70,170], pinky:[70,170]}; // tune on your hand
+const SEND_MS = 50, KEEPALIVE_MS = 250;
+const ATTRACT_MS = 30000;          // no hand + asleep this long -> idle demo
+const AUTO_SLEEP_MS = 60000;       // awake but idle this long -> sleep (0 disables)
+const FIST_ESTOP_IN_MIRROR = true; // false lets a fist close the arm while mirroring instead of e-stopping
+const SLEEP_POSE = 0;              // pose the sleep/lock animation ends in (0 closed, 180 open)
+const SLEEP_MOVES_ARM = true;      // false = animation only moves the on-screen hand
+const GHOST_ON_REQUEST = true;     // false = the 2D hand is always visible
+const PEACE_FRAMES = 3, PEACE_COOLDOWN_MS = 1500, GESTURE_BLOCK_MS = 1200;
 const LAT_TARGET_MS = 100, HIST = 60;
+const CORE_TIMEOUT_MS = 25000, ARMED_MS = 8000;
+const PROBE_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/package.json';
 const STATE_TXT = {idle:'Ready', listening:'Listening', thinking:'Thinking', speaking:'Speaking'};
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem('animus.' + k); return v === null ? d : v; } catch { return d; } },
   set(k, v) { try { localStorage.setItem('animus.' + k, v); } catch {} }
 };
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
 
-NAMES.forEach(n => $('joints').insertAdjacentHTML('beforeend',
-  `<div class="joint-row"><span>${n.toUpperCase()}</span><div class="bar"><i id="b-${n}"></i></div><b id="v-${n}">180°</b></div>`));
+NAMES.forEach(n => {
+  $('joints').insertAdjacentHTML('beforeend', `<div class="row"><span>${cap(n)}</span><div class="bar"><i id="b-${n}"></i></div><b id="v-${n}">180°</b></div>`);
+  $('frows').insertAdjacentHTML('beforeend', `<span>${cap(n)}</span><span id="a-${n}">180°</span><span id="bat-${n}">--</span>`);
+});
 
-let awake = false, estop = false, mirror = false, attract = false, animating = false, ghostOpen = false;
+/* ---------- state ---------- */
+let awake = false, estop = false, mirror = false, attract = false, animating = false, ghostOpen = !GHOST_ON_REQUEST;
+let showMode = false, offlineForced = false, netDown = !navigator.onLine, trackingOff = false;
 let locked = store.get('locked', '0') === '1';
-let coreState = 'idle', btBatt = '';
+let coreState = 'idle', btName = '', btBatt = '', armedUntil = 0;
 let sens = +store.get('sens', 5), smoothPct = +store.get('smo', 65), gain = 1, alpha = 0.35;
-const smooth = {thumb:180, index:180, middle:180, ring:180, pinky:180};
-const raw = {...smooth};
+const smooth = {thumb:180, index:180, middle:180, ring:180, pinky:180};   // filtered output (what the arm gets)
+const raw = {...smooth};                                                  // unfiltered tracking
 const stats = {fps: 0, lat: 0, msgs: 0};
 const latHist = [], linkHist = [];
 let latSrc = 'VISION', lastHandAt = 0;
 const t0 = performance.now();
 let lastActive = performance.now();
 const sparkCtx = $('spark').getContext('2d'), ghostCtx = $('ghost').getContext('2d');
+const isOffline = () => offlineForced || netDown;
 
 function applySliders() {
-  gain = Math.pow(2, (sens - 5) / 4);
-  alpha = 1 - smoothPct / 100;
+  gain = Math.pow(2, (sens - 5) / 4);     // 1..10 -> 0.5x..2.4x, 5 = 1.0x
+  alpha = 1 - smoothPct / 100;            // 0% = raw, 90% = very smooth
   $('sens-v').textContent = gain.toFixed(1) + '×';
   $('smo-v').textContent = smoothPct + '%';
 }
 $('sens').value = sens; $('smo').value = smoothPct; applySliders();
 $('sens').oninput = e => { sens = +e.target.value; store.set('sens', sens); applySliders(); };
 $('smo').oninput = e => { smoothPct = +e.target.value; store.set('smo', smoothPct); applySliders(); };
+$('shelf-tab').onclick = () => {
+  const open = $('shelf').classList.toggle('open');
+  $('shelf-tab').setAttribute('aria-expanded', open);
+  $('shelf-tab').textContent = 'Hardware and tuning ' + (open ? '▴' : '▾');
+};
+
+let toastT = null;
+function toast(msg, ms = 3800) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms);
+}
 
 function paintJoints() {
   NAMES.forEach(n => {
-    $('v-' + n).textContent = Math.round(smooth[n]) + '°';
+    const v = Math.round(smooth[n]) + '°';
+    $('v-' + n).textContent = v; $('a-' + n).textContent = v;
     $('b-' + n).style.width = (smooth[n] / 180 * 100) + '%';
   });
   drawGhost();
 }
-
 function renderState() {
+  const armed = performance.now() < armedUntil;
   let txt = 'Asleep', cls = '';
-  if (estop) { txt = 'Emergency Stop'; cls = 'danger'; }
+  if (estop) { txt = 'Emergency stop'; cls = 'danger'; }
   else if (locked) { txt = 'Locked'; cls = 'warn'; }
-  else if (mirror) { txt = 'Mirroring Active'; cls = 'ok'; }
-  else if (awake) { txt = 'Online & Ready'; cls = 'ok'; }
+  else if (rec.phase !== 'idle') { txt = 'Recording'; cls = 'danger'; }
+  else if (showMode) { txt = 'Show mode'; cls = 'awake'; }
+  else if (armed || coreState === 'listening') { txt = 'Listening'; cls = 'awake'; }
+  else if (mirror) { txt = 'Mirroring'; cls = 'ok'; }
+  else if (awake) { txt = 'Awake'; cls = 'awake'; }
   $('state').textContent = txt; $('state').className = 'state ' + cls;
-  $('vstatus').textContent = locked ? 'Locked' : coreState !== 'idle' ? STATE_TXT[coreState] : awake ? 'Ready' : 'Asleep';
-  $('assistant').classList.toggle('asleep', !awake);
+  $('vstatus').textContent = locked ? 'Locked' : armed ? 'Listening for your command' : coreState !== 'idle' ? STATE_TXT[coreState] : awake ? 'Ready' : 'Asleep';
+  $('assistant').classList.toggle('dim', !awake);
   $('assistant').classList.toggle('locked', locked);
+  document.body.classList.toggle('awake', awake && !locked);
   drawGhost();
 }
 
+/* ---------- latency sparkline + link stats ---------- */
 function pushLat(v, src) { latHist.push(v); if (latHist.length > HIST) latHist.shift(); latSrc = src; }
 function pushLink(ok) { linkHist.push(ok ? 1 : 0); if (linkHist.length > HIST) linkHist.shift(); }
-
 function drawSpark() {
-  const c = sparkCtx, W = 150, H = 36;
+  const c = sparkCtx, W = 160, H = 40;
   c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, W, H);
   const ymax = Math.max(LAT_TARGET_MS * 1.5, ...latHist);
   const y = v => H - 3 - Math.min(v, ymax) / ymax * (H - 6);
-  c.strokeStyle = 'rgba(130,154,177,.3)'; c.lineWidth = 1; c.setLineDash([3, 3]);
+  c.strokeStyle = 'rgba(127,147,181,.45)'; c.lineWidth = 1; c.setLineDash([3, 3]);
   c.beginPath(); c.moveTo(0, y(LAT_TARGET_MS)); c.lineTo(W, y(LAT_TARGET_MS)); c.stroke(); c.setLineDash([]);
   if (latHist.length < 2) return;
-  c.strokeStyle = latHist[latHist.length - 1] > LAT_TARGET_MS ? '#ff1744' : '#00e676'; c.lineWidth = 1.5;
+  c.strokeStyle = latHist[latHist.length - 1] > LAT_TARGET_MS ? '#ff3344' : '#38bdf8'; c.lineWidth = 1.6; c.lineJoin = 'round';
   c.beginPath();
   latHist.forEach((v, i) => { const x = W - (latHist.length - 1 - i) / (HIST - 1) * W; i ? c.lineTo(x, y(v)) : c.moveTo(x, y(v)); });
   c.stroke();
 }
-
 function updateMetrics() {
   const n = latHist.length, last = n ? latHist[n - 1] : 0;
   const p95 = n ? [...latHist].sort((a, b) => a - b)[Math.floor(0.95 * (n - 1))] : 0;
@@ -318,121 +489,417 @@ function updateMetrics() {
   $('m-fps').textContent = stats.fps;
   $('m-lat').textContent = Math.round(last);
   $('m-p95').textContent = Math.round(p95);
+  $('m-src').textContent = latSrc === 'VISION' ? 'vision only' : 'vision to Bluetooth';
   $('m-drop').textContent = bleChar ? (linkHist.length ? Math.round(drops / linkHist.length * 100) + '%' : '0%') : 'n/a';
 }
 setInterval(() => { drawSpark(); updateMetrics(); }, 200);
 
-/* Old-style 2D Ghost Hand Layout & Logic Restored */
-const GH_FING = {
-  thumb:  {x: 45, y: 110, a: -52, L: 38},
-  index:  {x: 52, y: 76,  a: -8,  L: 48},
-  middle: {x: 68, y: 72,  a: 0,   L: 54},
-  ring:   {x: 84, y: 76,  a: 8,   L: 48},
-  pinky:  {x: 98, y: 84,  a: 16,  L: 38},
+/* ---------- 2D hand (wireframe): filtered output solid, raw tracking dashed ---------- */
+const GH = {
+  thumb:  {b:[40,116], a:-52, l:[26,22], k: 1},
+  index:  {b:[50,80],  a:-8,  l:[30,24], k: 1},
+  middle: {b:[68,76],  a:0,   l:[34,26], k: 1},
+  ring:   {b:[86,80],  a:7,   l:[30,24], k:-1},
+  pinky:  {b:[102,92], a:15,  l:[24,20], k:-1},
 };
-const ghTip = (f, v) => {
-  const len = f.L * (0.45 + 0.55 * v / 180), r = f.a * Math.PI / 180;
-  return [f.x + Math.sin(r) * len, f.y - Math.cos(r) * len];
-};
+const dir = d => [Math.sin(d * Math.PI / 180), -Math.cos(d * Math.PI / 180)];
+function drawHandShape(g, vals, color, dashed) {
+  g.strokeStyle = color; g.fillStyle = color; g.lineWidth = 2; g.lineJoin = g.lineCap = 'round';
+  g.setLineDash(dashed ? [3, 3] : []);
+  g.beginPath(); g.moveTo(42, 84); g.lineTo(112, 96); g.lineTo(102, 150); g.lineTo(52, 150); g.closePath(); g.stroke();
+  NAMES.forEach(n => {
+    const f = GH[n], c = 1 - vals[n] / 180;
+    const a1 = f.a + f.k * c * 70, a2 = a1 + f.k * c * 95, d1 = dir(a1), d2 = dir(a2);
+    const p1 = [f.b[0] + d1[0] * f.l[0], f.b[1] + d1[1] * f.l[0]];
+    const p2 = [p1[0] + d2[0] * f.l[1], p1[1] + d2[1] * f.l[1]];
+    g.beginPath(); g.moveTo(f.b[0], f.b[1]); g.lineTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]); g.stroke();
+    if (!dashed) [p1, p2].forEach(p => { g.beginPath(); g.arc(p[0], p[1], 2.2, 0, 7); g.fill(); });
+  });
+}
 function setGhost(on) {
   ghostOpen = on;
-  $('ghost-panel').dataset.open = on ? '1' : '0';
-  $('ghost-panel').setAttribute('aria-hidden', on ? 'false' : 'true');
+  $('ghost').dataset.open = on ? '1' : '0';
+  $('ghost').setAttribute('aria-hidden', on ? 'false' : 'true');
+  updateLayout();
   if (on) drawGhost();
 }
 function drawGhost() {
   if (!ghostOpen) return;
   const g = ghostCtx;
-  g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, 150, 170);
-  g.lineCap = g.lineJoin = 'round';
-  
-  // Filtered solid line
-  g.strokeStyle = estop ? '#ff1744' : locked ? '#ffab00' : '#1e73ff'; g.lineWidth = 3;
+  g.setTransform(4, 0, 0, 4, 0, 0); g.clearRect(0, 0, 150, 170);
+  const col = estop ? '#FF3344' : locked ? '#FFB020' : '#38bdf8';
+  const tracking = performance.now() - lastHandAt < 300;
+  drawHandShape(g, tracking ? raw : smooth, 'rgba(255,51,68,.55)', true);
+  drawHandShape(g, smooth, col, false);
+  g.setLineDash([]); g.font = '10px Courier New'; g.textAlign = 'left'; g.fillStyle = col;
+  g.fillText('2D HAND', 8, 14);
+  g.fillStyle = '#7f93b5';
+  g.fillText(estop ? 'HALTED' : locked ? 'LOCKED' : (mirror && bleChar) ? 'LIVE → ARM' : 'SIMULATED', 8, 164);
+  g.textAlign = 'right';
+  g.fillStyle = 'rgba(255,51,68,.85)'; g.fillText('raw', 142, 14);
+  g.fillStyle = col; g.fillText('filtered', 142, 26);
+}
+
+/* ---------- 3D hand (own projection, no library, works offline) ---------- */
+const T3 = [[0,0,0],[-2.2,2,.3],[-4,4.2,.8],[-5.6,6.2,1],[-6.8,8,1],
+  [-2.8,8.8,0],[-3,12.8,0],[-3.1,15.3,0],[-3.1,17.4,0],[-.4,9.2,0],[-.4,13.6,0],[-.4,16.4,0],[-.4,18.7,0],
+  [1.9,8.8,0],[2.1,12.8,0],[2.1,15.3,0],[2.1,17.4,0],[3.9,8,0],[4.3,11,0],[4.4,13,0],[4.4,14.7,0]];
+const CHAINS = {index:[5,6,7,8], middle:[9,10,11,12], ring:[13,14,15,16], pinky:[17,18,19,20]};
+const CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,9],[9,13],[13,17],[0,17],[5,6],[6,7],[7,8],[9,10],[10,11],[11,12],[13,14],[14,15],[15,16],[17,18],[18,19],[19,20]];
+function synth3D(v) {                     // 21 joints from the five servo angles
+  const pts = T3.map(p => p.slice());
   NAMES.forEach(n => {
-    const f = GH_FING[n], [tx, ty] = ghTip(f, smooth[n]);
-    g.beginPath(); g.moveTo(f.x, f.y); g.lineTo(tx, ty); g.stroke();
+    const c = 1 - v[n] / 180;
+    if (n === 'thumb') {
+      const ph = c * 1.1, cs = Math.cos(ph), sn = Math.sin(ph), b = T3[1];
+      for (let i = 1; i <= 4; i++) {
+        const rx = T3[i][0] - b[0], ry = T3[i][1] - b[1];
+        pts[i] = [b[0] + rx * cs + ry * sn, b[1] - rx * sn + ry * cs, b[2] + (T3[i][2] - b[2]) + c * (i - 1) * 1.1];
+      }
+      return;
+    }
+    const ch = CHAINS[n], A = [1.4, 1.75, 1.05];
+    let ang = 0, cur = T3[ch[0]].slice(); pts[ch[0]] = cur.slice();
+    for (let s = 0; s < 3; s++) {
+      ang += c * A[s];
+      const dy0 = T3[ch[s+1]][1] - T3[ch[s]][1], dz0 = T3[ch[s+1]][2] - T3[ch[s]][2];
+      cur = [T3[ch[s+1]][0], cur[1] + dy0 * Math.cos(ang) - dz0 * Math.sin(ang), cur[2] + dy0 * Math.sin(ang) + dz0 * Math.cos(ang)];
+      pts[ch[s+1]] = cur.slice();
+    }
   });
+  return pts;
+}
+let pts3D = null, last3dAt = 0;
+function track3D(wl) {                    // MediaPipe world landmarks (metres, y down) -> render space (cm, y up, mirrored like the camera view)
+  const p = wl.map(q => [-q.x * 100, -q.y * 100, -q.z * 100]);
+  pts3D = pts3D ? p.map((q, i) => q.map((x, k) => pts3D[i][k] * 0.5 + x * 0.5)) : p;
+  last3dAt = performance.now();
+}
+const view3 = {yaw: 0.45, pitch: 0.28, drag: null, userAt: 0};
+function render3D(c) {
+  const g = c.getContext('2d'), W = c.width, H = c.height;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
+  if (!W || !H) return;
+  const now = performance.now(), live = now - last3dAt < 400 && !busy() && pts3D;
+  const pts = live ? pts3D : synth3D(smooth);
+  const ids = [0, 5, 9, 13, 17], cen = [0, 1, 2].map(k => ids.reduce((s, i) => s + pts[i][k], 0) / ids.length);
+  const sway = live || now - view3.userAt < 4000 ? 0 : Math.sin(now / 1600) * 0.18;
+  const cy = Math.cos(view3.yaw + sway), sy = Math.sin(view3.yaw + sway), cp = Math.cos(view3.pitch), sp = Math.sin(view3.pitch);
+  const k = Math.min(W, H) / 27, F = 70;
+  const Q = pts.map(p => {
+    const x = p[0] - cen[0], y = p[1] - cen[1], z = p[2] - cen[2];
+    const x1 = x * cy + z * sy, z1 = -x * sy + z * cy, y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp, s = F / (F - z2);
+    return [W / 2 + x1 * k * s, H / 2 - y2 * k * s, z2, s];
+  });
+  const dpr = W / (c.clientWidth || W);
+  // floor rings
+  g.strokeStyle = 'rgba(70,190,255,.14)'; g.lineWidth = dpr;
+  for (let r = 1; r <= 3; r++) { g.beginPath(); g.ellipse(W / 2, H * 0.9, W * 0.12 * r, W * 0.035 * r, 0, 0, 7); g.stroke(); }
+  // palm
+  g.beginPath(); [0, 1, 5, 9, 13, 17].forEach((i, j) => j ? g.lineTo(Q[i][0], Q[i][1]) : g.moveTo(Q[i][0], Q[i][1])); g.closePath();
+  g.fillStyle = 'rgba(56,189,248,.10)'; g.fill(); g.strokeStyle = 'rgba(56,189,248,.35)'; g.stroke();
+  // bones, far to near
+  g.lineCap = 'round';
+  CONN.map(([a, b]) => ({a, b, z: (Q[a][2] + Q[b][2]) / 2})).sort((m, n) => m.z - n.z).forEach(({a, b, z}) => {
+    const t = clamp((z + 8) / 16, 0, 1), w = 0.42 * k * (Q[a][3] + Q[b][3]) / 2;
+    g.strokeStyle = `rgba(8,40,70,${0.6 + 0.3 * t})`; g.lineWidth = w + 3 * dpr;
+    g.beginPath(); g.moveTo(Q[a][0], Q[a][1]); g.lineTo(Q[b][0], Q[b][1]); g.stroke();
+    g.strokeStyle = `rgba(56,189,248,${0.45 + 0.5 * t})`; g.lineWidth = w;
+    g.beginPath(); g.moveTo(Q[a][0], Q[a][1]); g.lineTo(Q[b][0], Q[b][1]); g.stroke();
+  });
+  // joints, far to near
+  Q.map((q, i) => ({q, i})).sort((m, n) => m.q[2] - n.q[2]).forEach(({q, i}) => {
+    const tip = i > 0 && i % 4 === 0, r = (tip ? 0.34 : 0.24) * k * q[3];
+    g.fillStyle = tip ? '#ffffff' : '#bfe9ff'; g.beginPath(); g.arc(q[0], q[1], r, 0, 7); g.fill();
+    if (tip) { g.strokeStyle = 'rgba(56,189,248,.6)'; g.lineWidth = dpr * 1.5; g.beginPath(); g.arc(q[0], q[1], r * 1.8, 0, 7); g.stroke(); }
+  });
+  if ($('h3d-src')) $('h3d-src').textContent = live ? 'Tracking live' : 'Servo output';
+}
+const need3D = () => !$('hand3d').classList.contains('out') || $('video').classList.contains('s3d');
+let loop3On = false;
+function loop3() {
+  if (!need3D()) { loop3On = false; return; }
+  if (!$('hand3d').classList.contains('out')) render3D($('h3d'));
+  if ($('video').classList.contains('s3d')) render3D($('s3d'));
+  requestAnimationFrame(loop3);
+}
+function ensure3D() { if (need3D() && !loop3On) { loop3On = true; requestAnimationFrame(loop3); } }
+const ro = new ResizeObserver(es => es.forEach(e => { const d = devicePixelRatio || 1, c = e.target; c.width = Math.round(e.contentRect.width * d); c.height = Math.round(e.contentRect.height * d); }));
+['h3d', 's3d'].forEach(id => {
+  const c = $(id); ro.observe(c);
+  c.addEventListener('pointerdown', e => { view3.drag = {x: e.clientX, y: e.clientY, yaw: view3.yaw, pitch: view3.pitch}; c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', e => { const d = view3.drag; if (!d) return; view3.yaw = d.yaw + (e.clientX - d.x) * 0.01; view3.pitch = clamp(d.pitch - (e.clientY - d.y) * 0.01, -1.2, 1.2); view3.userAt = performance.now(); });
+  c.addEventListener('pointerup', () => { view3.drag = null; });
+  c.addEventListener('dblclick', () => { view3.yaw = 0.45; view3.pitch = 0.28; view3.userAt = 0; });
+});
 
-  // Raw dashed line
-  if (performance.now() - lastHandAt < 300) {
-    g.strokeStyle = 'rgba(255,23,68,.7)'; g.lineWidth = 1.5; g.setLineDash([2, 2]);
-    NAMES.forEach(n => {
-      const f = GH_FING[n], [tx, ty] = ghTip(f, raw[n]);
-      g.beginPath(); g.moveTo(f.x, f.y); g.lineTo(tx, ty); g.stroke();
+/* ---------- layout: offline, show mode ---------- */
+function updateLayout() {
+  const off = isOffline(), v = $('video');
+  document.body.classList.toggle('offline', off);
+  document.body.classList.toggle('show', showMode);
+  $('side').classList.toggle('out', off && !showMode);
+  $('hand3d').classList.toggle('out', !(off && !showMode));
+  const s2d = showMode && ghostOpen && !off, s3d = showMode && off;
+  v.classList.toggle('s2d', s2d); v.classList.toggle('s3d', s3d); v.classList.toggle('hide-cam', s2d || s3d);
+  $('netchip').hidden = !off;
+  $('offlinebtn').setAttribute('aria-pressed', off);
+  $('showmode').setAttribute('aria-pressed', showMode);
+  $('offline-why').textContent = offlineForced && !netDown
+    ? 'Offline mode is on for testing. The network is still up, but cloud AI and the browser wake word are paused.'
+    : 'No internet. Cloud AI and the browser wake word are paused. Tracking, Bluetooth and local commands still work.';
+  ensure3D(); renderConn();
+}
+function setOffline(on) {
+  offlineForced = on;
+  if (!on && netDown) toast('The network is actually down, so offline mode stays on.');
+  updateLayout(); srSync();
+  toast(isOffline() ? 'Offline mode on' : 'Offline mode off');
+}
+$('offlinebtn').onclick = () => setOffline(!offlineForced);
+function setShowMode(on) {
+  if (on && locked) { toast('Locked. Show ✌ to unlock first.'); return; }
+  if (showMode === on) return;
+  showMode = on;
+  if (on) { setAwake(true, false); touch(); } else { runStop(); recCancel(); }
+  updateLayout(); renderState();
+  toast(on ? 'Show mode on' : 'Show mode off');
+}
+$('showmode').onclick = () => setShowMode(!showMode);
+$('exit-show').onclick = () => setShowMode(false);
+
+/* ---------- network detection ---------- */
+let probeFails = 0;
+async function probe() {
+  if (!navigator.onLine) { if (!netDown) { netDown = true; updateLayout(); srSync(); toast('Internet lost. Offline mode on.'); } return; }
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 4000);
+  try {
+    await fetch(PROBE_URL, {method: 'HEAD', mode: 'no-cors', cache: 'no-store', signal: ctl.signal});
+    probeFails = 0;
+    if (netDown) { netDown = false; updateLayout(); srSync(); toast('Back online.'); }
+  } catch {
+    if (++probeFails >= 2 && !netDown) { netDown = true; updateLayout(); srSync(); toast('Internet lost. Offline mode on.'); }
+  } finally { clearTimeout(to); }
+}
+addEventListener('offline', () => { netDown = true; updateLayout(); srSync(); toast('Internet lost. Offline mode on.'); });
+addEventListener('online', () => { probeFails = 0; netDown = false; updateLayout(); srSync(); probe(); });
+setInterval(probe, 15000);
+
+/* ---------- transcript, replies, speech output ---------- */
+let hlT = null;
+function setTranscript(text, hl = false) {
+  ['transcript', 'tr2'].forEach(id => { const e = $(id); e.replaceChildren(document.createTextNode(text)); });
+  $('transcript').classList.toggle('hl', hl); clearTimeout(hlT);
+  if (hl) hlT = setTimeout(() => $('transcript').classList.remove('hl'), 1800);
+}
+function setTranscriptMarked(toks, i, len) {   // highlights the wake word inside what was heard
+  ['transcript', 'tr2'].forEach(id => {
+    const e = $(id); e.replaceChildren();
+    toks.forEach((w, j) => {
+      const node = (j >= i && j < i + len) ? el('mark', w) : document.createTextNode(w);
+      e.append(node, document.createTextNode(' '));
     });
-    g.setLineDash([]);
+  });
+  $('transcript').classList.add('hl'); clearTimeout(hlT); hlT = setTimeout(() => $('transcript').classList.remove('hl'), 1800);
+}
+let corePending = null;
+function setReply(text, src) {           // src: local | core | error
+  clearTimeout(corePending);
+  [['reply', null], ['rp2', null]].forEach(([id]) => { const e = $(id); e.hidden = false; e.dataset.src = src; e.textContent = text; });
+  const lab = {local: 'Answered on this screen', core: 'From the voice core', error: 'Something went wrong'}[src];
+  $('reply-src').hidden = false; $('reply-src').textContent = lab;
+}
+let localSpeaking = false, speakEndAt = 0;
+function speakLocal(text) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.onstart = () => { localSpeaking = true; };
+    u.onend = u.onerror = () => { localSpeaking = false; speakEndAt = performance.now(); };
+    speechSynthesis.speak(u);
+  } catch {}
+}
+const isSpeaking = () => coreState === 'speaking' || localSpeaking || performance.now() - speakEndAt < 900;
+function renderConn() {
+  const core = wsOpen();
+  $('conn-note').textContent = core
+    ? 'Voice core linked. AI answers and spoken replies are on.' + (isOffline() ? ' No internet, so cloud answers may fail.' : '')
+    : 'Voice core offline. Basic commands run on this screen. Start AI answers with python3 animus.py.';
+}
+
+/* ---------- commands: local intents, smart fallback, voice core ---------- */
+const POSES = {
+  Open: {thumb:180,index:180,middle:180,ring:180,pinky:180}, Fist: {thumb:0,index:0,middle:0,ring:0,pinky:0},
+  Pinch: {thumb:90,index:90,middle:180,ring:180,pinky:180}, Point: {thumb:0,index:180,middle:0,ring:0,pinky:0},
+  Peace: {thumb:0,index:180,middle:180,ring:0,pinky:0}, 'Thumb up': {thumb:180,index:0,middle:0,ring:0,pinky:0},
+};
+const WAVE = {dur: 2600, fn: t => Object.fromEntries(NAMES.map((n, i) => [n, 115 + 65 * Math.sin(2 * Math.PI * (t / 0.9 - i * 0.13))]))};
+const POSE_NAMES = [...Object.keys(POSES), 'Wave'];
+const POSE_WORDS = [[/\bthumbs? up\b/, 'Thumb up'], [/\bpeace\b/, 'Peace'], [/\bpoint(ing)?\b/, 'Point'], [/\bpinch\b/, 'Pinch'],
+  [/\b(fist|clench|close (your |the |my )?hand)\b/, 'Fist'], [/\b(open (your |the |my )?hand|open palm|release|spread)\b/, 'Open'], [/\bwav(e|ing)\b/, 'Wave']];
+const MODEL_W = '(hand model|model|2 ?d|two ?d|ghost|virtual hand|twin|hand view)';
+const normText = s => s.toLowerCase().replace(/[^a-z0-9+\-*/().%\s]/g, ' ').replace(/\s+/g, ' ').trim()
+  .replace(/^(hey |hi |ok |okay )?(animus|jarvis)\b ?/, '');
+
+function calc(t) {                        // tiny safe calculator: + - * / ^ ( ) and words
+  let e = t.replace(/^(what is|what s|whats|calculate|compute|how much is)\s+/, '')
+    .replace(/\bplus\b/g, '+').replace(/\bminus\b/g, '-').replace(/\b(times|multiplied by|x)\b/g, '*')
+    .replace(/\b(divided by|over)\b/g, '/').replace(/\bto the power of\b/g, '^').replace(/\bsquared\b/g, '^2').replace(/\s+/g, '');
+  if (!/^[\d+\-*/^().%]+$/.test(e) || !/\d/.test(e) || !/[+\-*/^%]/.test(e.replace(/^-/, ''))) return null;
+  let i = 0;
+  const num = () => { const m = /^\d*\.?\d+/.exec(e.slice(i)); if (!m) throw 0; i += m[0].length; return parseFloat(m[0]); };
+  const atom = () => { if (e[i] === '(') { i++; const v = expr(); if (e[i++] !== ')') throw 0; return v; } if (e[i] === '-') { i++; return -atom(); } return num(); };
+  const pow = () => { const b = atom(); if (e[i] === '^') { i++; return Math.pow(b, pow()); } return b; };
+  const term = () => { let v = pow(); while ('*/%'.includes(e[i]) && i < e.length) { const o = e[i++], r = pow(); v = o === '*' ? v * r : o === '/' ? v / r : v % r; } return v; };
+  const expr = () => { let v = term(); while ((e[i] === '+' || e[i] === '-') && i < e.length) { const o = e[i++], r = term(); v = o === '+' ? v + r : v - r; } return v; };
+  try { const v = expr(); return i === e.length && isFinite(v) ? String(Math.round(v * 1e6) / 1e6) : null; } catch { return null; }
+}
+function statusLine() {
+  return `Voice core ${wsOpen() ? 'linked' : 'offline'}. Arm ${bleChar ? 'linked' + (btBatt ? ' at ' + btBatt : '') : 'not connected'}. ` +
+    `Tracking ${trackingOff ? 'unavailable' : stats.fps + ' frames per second'}. Network ${isOffline() ? 'offline' : 'online'}. ${locked ? 'Locked' : awake ? 'Awake' : 'Asleep'}.`;
+}
+const HELP = 'Try: show the hand model, offline mode, show mode, record, make a fist, open hand, peace, point, pinch, wave, mirror on, lock, go to sleep, emergency stop, what time is it, status, or a sum like 12 times 7.';
+
+function localIntent(t) {                 // commands the screen can run itself; returns a reply or null
+  const words = t.split(' ').length;
+  if (new RegExp(`\\b(hide|close|remove|dismiss)\\b.*\\b${MODEL_W}\\b`).test(t)) { setGhost(false); return 'Hiding the 2D hand.'; }
+  if (new RegExp(`\\b(show|display|open|bring up|turn on)\\b.*\\b${MODEL_W}\\b`).test(t)) { setGhost(true); return 'Showing the 2D hand.'; }
+  if (/\boffline\b/.test(t)) { const off = /\b(off|exit|leave|disable|stop|end)\b/.test(t); setOffline(!off); return off ? 'Offline mode off.' : 'Offline mode on. The 3D hand is live.'; }
+  if (/\b(show ?mode|pose runner|sequence runner)\b/.test(t)) {
+    const off = /\b(off|exit|leave|disable|stop|end|close)\b/.test(t); setShowMode(!off);
+    return locked ? 'Locked. Show ✌ to unlock first.' : off ? 'Show mode off.' : 'Show mode on.';
   }
-  $('gh-status').textContent = estop ? 'Stopped' : locked ? 'Locked' : mirror ? 'Mirroring' : 'Simulated';
+  if (/\b(record|recording)\b/.test(t) && !/\bplay\b/.test(t)) { if (!showMode) setShowMode(true); recStart(); return 'Recording starts after a 3 second countdown. Move your hand.'; }
+  if (/\bplay\b.*\b(recording|clip)\b/.test(t)) return playClip() ? 'Playing the recording.' : 'There is no recording yet.';
+  if (/\bplay\b.*\b(sequence|routine)\b|\brun (the )?sequence\b/.test(t)) { if (!showMode) setShowMode(true); return playSeq() ? 'Playing the sequence.' : 'The sequence is empty.'; }
+  if (/\b(lock|lock down)\b/.test(t) && words <= 4) { playSleepAnimation(() => setLocked(true)); return 'Locking.'; }
+  if (/\b(sleep|goodnight|good night|standby)\b/.test(t) && words <= 5) { playSleepAnimation(() => setAwake(false)); return 'Going to sleep.'; }
+  if (/\bmirror(ing)?\b/.test(t)) { const off = /\b(off|stop|disable)\b/.test(t); setMirror(!off); return off ? 'Mirror off.' : (estop ? 'Mirror stays off while the emergency stop is active.' : 'Mirror on. The arm follows your hand.'); }
+  if (/\b(emergency stop|e stop|estop|halt|stop everything|stop the (hand|arm))\b/.test(t)) { setEstop(true); return 'Emergency stop. Press Resume on screen to clear it.'; }
+  if (/\bresume\b/.test(t)) return estop ? 'For safety, clear the emergency stop with the Resume button.' : 'Nothing to resume.';
+  if (words <= 5 || /\bhand\b/.test(t)) {
+    const hit = POSE_WORDS.find(([re]) => re.test(t));
+    if (hit) { if (estop || locked) return estop ? 'Emergency stop is active. Resume first.' : 'Locked. Show ✌ to unlock.'; applyPose(hit[1]); return hit[1] + '.'; }
+  }
+  if (/\b(help|what can you do|commands)\b/.test(t)) return HELP;
+  return null;
 }
-
-const MODEL = '(hand model|model|2 ?d|two ?d|ghost|virtual hand)';
-const SHOW_RE = new RegExp(`\\b(show|display|open|bring up|turn on)\\b.*\\b${MODEL}\\b`);
-const HIDE_RE = new RegExp(`\\b(hide|close|remove|dismiss|turn off)\\b.*\\b${MODEL}\\b`);
-function localReply(q) {
-  const c = q.toLowerCase();
-  if (HIDE_RE.test(c)) { setGhost(false); return 'Hiding the hand model.'; }
-  if (SHOW_RE.test(c)) { setGhost(true); return 'Showing the hand model.'; }
-  return 'Voice core offline. Try asking to "show hand".';
+function smartLocal(t) {                  // facts and small talk that need no internet
+  if (/\b(what time|current time|time is it)\b|^time$/.test(t)) return 'It is ' + new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}) + '.';
+  if (/\b(what s the date|what is the date|today s date|what day)\b|^date$/.test(t)) return 'Today is ' + new Date().toLocaleDateString([], {weekday: 'long', month: 'long', day: 'numeric'}) + '.';
+  if (/^(system |hud )?status$|\bhow are you\b/.test(t)) return statusLine();
+  if (/\bbattery\b/.test(t)) return bleChar ? (btBatt ? 'The arm battery is at ' + btBatt + '.' : 'The arm is linked but has not reported a battery level.') : 'The arm is not connected, so there is no battery reading.';
+  if (/\b(latency|how fast)\b/.test(t)) return latHist.length ? `Latency is ${Math.round(latHist[latHist.length - 1])} milliseconds, ${latSrc === 'VISION' ? 'vision only' : 'vision to Bluetooth'}.` : 'No latency samples yet. Show your hand to the camera.';
+  if (/\b(who are you|your name|what are you)\b/.test(t)) return 'I am Animus, the voice and vision assistant for this robotic hand.';
+  if (/^(hi|hello|hey)$/.test(t)) return 'Hello. I am listening.';
+  if (/\b(thanks|thank you)\b/.test(t)) return 'You are welcome.';
+  const c = calc(t); if (c !== null) return t.replace(/^(what is|what s|whats|calculate|compute|how much is)\s+/, '') + ' = ' + c;
+  return null;
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') setGhost(false); });
+function runCommand(raw, source = 'typed') {
+  const t = normText(raw);
+  if (!t || locked) { if (locked) toast('Locked. Show ✌ to unlock.'); return; }
+  touch(); if (!awake) setAwake(true, false);
+  setTranscript('“' + raw.trim() + '”');
+  $('reply').hidden = true; $('rp2').hidden = true; $('reply-src').hidden = true;
+  const reply = localIntent(t);
+  const out = reply !== null ? reply : smartLocal(t);
+  if (out !== null) { setReply(out, 'local'); if (source === 'voice') speakLocal(out); return; }
+  if (wsOpen()) {
+    coreSentAt = performance.now();
+    wsSend({type: 'text_command', text: raw.trim(), source});
+    setReply('Thinking…', 'core');
+    corePending = setTimeout(() => setReply('The voice core did not answer in 25 seconds. It may be busy, or the cloud AI may be unreachable. Check the terminal running animus.py.', 'error'), CORE_TIMEOUT_MS);
+  } else {
+    const msg = 'I cannot answer that without the voice core. Start it with python3 animus.py for AI answers. ' + (isOffline() ? 'There is also no internet. ' : '') + 'Say help to hear what works now.';
+    setReply(msg, 'error'); if (source === 'voice') speakLocal('I cannot answer that without the voice core.');
+  }
+}
+function submitFrom(inp) { const q = inp.value.trim(); if (!q) return; inp.value = ''; runCommand(q, 'typed'); }
+$('send').onclick = () => submitFrom($('cmd')); $('send2').onclick = () => submitFrom($('cmd2'));
+$('cmd').addEventListener('keydown', e => { if (e.key === 'Enter') submitFrom($('cmd')); });
+$('cmd2').addEventListener('keydown', e => { if (e.key === 'Enter') submitFrom($('cmd2')); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { setGhost(false); } });
 
-/* WebSocket & BLE */
-let ws = null;
+/* ---------- Python core link ---------- */
+let ws = null, wasLinked = false, lastCoreTranscriptAt = 0, coreSentAt = 0;
 const wsOpen = () => ws && ws.readyState === 1;
 const wsSend = o => { if (wsOpen()) ws.send(JSON.stringify(o)); };
 function connectWS() {
   ws = new WebSocket('ws://localhost:8765');
-  ws.onopen = () => { $('core-dot').classList.add('ok'); $('core-txt').textContent = 'Voice core online'; wsSend({type: 'lock', on: locked}); wsSend({type: 'estop', on: estop}); };
-  ws.onclose = () => { $('core-dot').classList.remove('ok'); $('core-txt').textContent = 'Voice core offline'; setTimeout(connectWS, 1500); };
+  ws.onopen = () => {
+    wasLinked = true; $('core-dot').classList.add('ok'); $('core-txt').textContent = 'Voice core linked';
+    wsSend({type: 'lock', on: locked}); wsSend({type: 'estop', on: estop}); renderConn();
+    toast('Voice core linked.');
+  };
+  ws.onclose = () => {
+    $('core-dot').classList.remove('ok'); $('core-txt').textContent = 'Voice core offline'; renderConn();
+    if (wasLinked) { wasLinked = false; toast('Voice core disconnected. Local commands still work.'); if (corePending) setReply('The voice core disconnected before it answered.', 'error'); }
+    setTimeout(connectWS, 1500);
+  };
   ws.onmessage = e => { stats.msgs++; try { onCore(JSON.parse(e.data)); } catch {} };
 }
 function onCore(m) {
-  if (m.type === 'state') { coreState = m.state; if (m.state !== 'idle') touch(); renderState(); }
-  else if (m.type === 'transcript') { touch(); $('transcript').textContent = `“${m.text}”`; $('reply').hidden = true; }
-  else if (m.type === 'reply') { $('reply').hidden = false; $('reply').textContent = m.text; }
+  if (m.type === 'state') {
+    coreState = m.state;
+    if (m.state !== 'idle') { touch(); if (!locked && !awake) setAwake(true, false); }
+    renderState();
+  } else if (m.type === 'transcript') { touch(); if (performance.now() - coreSentAt > 3000) lastCoreTranscriptAt = performance.now(); setTranscript('“' + m.text + '”', true); $('reply').hidden = true; $('rp2').hidden = true; }
+  else if (m.type === 'reply') setReply(m.text, 'core');
   else if (m.type === 'estop') setEstop(true, false);
   else if (m.type === 'lock') { if (m.on !== locked) setLocked(m.on, false); }
   else if (m.type === 'ghost') setGhost(!!m.on);
   else if (m.type === 'hand_command') applyCommandPose(m.angles);
 }
 
+/* ---------- Bluetooth LE (Nordic UART style) ---------- */
 const NUS = '6e400001-b5a0-f393-e0a9-e50e24dcca9e', NUS_RX = '6e400002-b5a0-f393-e0a9-e50e24dcca9e';
 let bleDev = null, bleChar = null, bleBusy = false;
 const enc = new TextEncoder();
-async function bleWrite(str) {
+async function bleWrite(str) {            // payload must stay <= 20 bytes; resolves true if handed to the BLE stack
   if (!bleChar || bleBusy) return false;
   bleBusy = true;
   try { await bleChar.writeValueWithoutResponse(enc.encode(str)); pushLink(true); return true; }
-  catch (e) { pushLink(false); return false; }
+  catch (e) { console.warn('BLE write', e); pushLink(false); return false; }
   finally { bleBusy = false; }
 }
-function setBt(ok, name = '') {
-  $('bt-status').textContent = ok ? 'CONNECTED' : 'DISCONNECTED';
+function renderArm() {
+  const ok = !!bleChar, batt = btBatt || '--';
+  $('bt-dot').classList.toggle('ok', ok);
+  $('bt-txt').textContent = ok ? 'Arm linked' + (btBatt ? ' ' + btBatt : '') : 'Arm not connected';
+  $('bt-status').textContent = ok ? 'Connected' : 'Not connected';
   $('bt-status').style.color = ok ? 'var(--ok)' : 'var(--danger)';
-  $('bt-device').textContent = name || 'NONE';
-  if (!ok) { bleChar = null; btBatt = ''; $('bt-batt').textContent = '--'; NAMES.forEach(n => $(n[0] + '-batt').textContent = '--'); }
+  $('bt-device').textContent = ok ? btName : 'None';
+  $('bt-batt').textContent = batt;
+  NAMES.forEach(n => $('bat-' + n).textContent = batt);
+  $('bt-btn').textContent = ok ? 'Disconnect' : 'Connect to robot arm';
+}
+function setBt(ok, name = '') {
+  btName = name; if (!ok) { bleChar = null; btBatt = ''; }
   latHist.length = 0; linkHist.length = 0;
-  renderState();
+  renderArm(); renderState();
 }
 $('bt-btn').onclick = async () => {
   if (bleDev && bleDev.gatt.connected) { bleDev.gatt.disconnect(); return; }
-  if (!navigator.bluetooth) return alert('Web Bluetooth is not supported.');
+  if (!navigator.bluetooth) { toast('Web Bluetooth is not supported in this browser. Use Chrome.'); return; }
   try {
-    $('bt-status').textContent = 'PAIRING...';
+    $('bt-status').textContent = 'Pairing…';
     bleDev = await navigator.bluetooth.requestDevice({acceptAllDevices: true, optionalServices: [NUS, 'battery_service']});
-    bleDev.addEventListener('gattserverdisconnected', () => setBt(false));
+    bleDev.addEventListener('gattserverdisconnected', () => { setBt(false); toast('Arm disconnected.'); });
     const server = await bleDev.gatt.connect();
     bleChar = await (await server.getPrimaryService(NUS)).getCharacteristic(NUS_RX);
-    setBt(true, bleDev.name || 'ANIMUS_ARM');
+    setBt(true, bleDev.name || 'Robot hand'); toast('Arm linked.');
     try {
       const b = await (await server.getPrimaryService('battery_service')).getCharacteristic('battery_level');
-      btBatt = (await b.readValue()).getUint8(0) + '%';
-      $('bt-batt').textContent = btBatt;
-      NAMES.forEach(n => $(n[0] + '-batt').textContent = btBatt);
-    } catch { NAMES.forEach(n => $(n[0] + '-batt').textContent = 'OK'); }
-  } catch (e) { setBt(false); }
+      const show = v => { btBatt = v.getUint8(0) + '%'; renderArm(); };
+      show(await b.readValue());
+      try { await b.startNotifications(); b.addEventListener('characteristicvaluechanged', e => show(e.target.value)); } catch {}
+    } catch {}
+  } catch (e) { console.warn(e); setBt(false); $('bt-status').textContent = 'Connection failed'; toast('Could not connect to the arm: ' + (e && e.message ? e.message : 'cancelled') + '.'); }
 };
 
+/* ---------- Arm output: smoothing, rate limit, keepalive ---------- */
 let lastSent = null, lastSentAt = 0, overrideUntil = 0;
 function emit(angles, minMs = SEND_MS, frameT0) {
   const now = performance.now();
@@ -447,17 +914,17 @@ function emit(angles, minMs = SEND_MS, frameT0) {
 }
 function applyCommandPose(angles) {
   if (estop || locked) return;
-  touch(); overrideUntil = performance.now() + 2500;
-  NAMES.forEach(n => { smooth[n] = angles[n]; raw[n] = angles[n]; });
-  paintJoints(); lastSentAt = 0; emit(smooth);
+  touch();
+  runPlay([{type: 'pose', angles, dur: 900, name: 'Voice pose'}], 'Pose');
 }
 
-/* Sleep closing animation */
+/* ---------- Sleep / lock closing animation ---------- */
 function playSleepAnimation(onComplete) {
-  if (animating) return; animating = true;
+  if (animating) return;                          // one animation at a time
+  runStop(); animating = true;
   const start = {...smooth}, begin = performance.now(), dur = 800;
   const step = now => {
-    const p = Math.max(0, Math.min((now - begin) / dur, 1)), e = 1 - Math.pow(1 - p, 3);
+    const p = Math.max(0, Math.min((now - begin) / dur, 1)), e = 1 - Math.pow(1 - p, 3);   // ease-out
     NAMES.forEach(n => smooth[n] = start[n] + (SLEEP_POSE - start[n]) * e);
     paintJoints();
     if (SLEEP_MOVES_ARM) emit(smooth, SEND_MS);
@@ -469,79 +936,290 @@ function playSleepAnimation(onComplete) {
   requestAnimationFrame(step);
 }
 
+/* ---------- Modes: e-stop, lock, mirror, awake ---------- */
 function setMirror(on) {
   if (on && (locked || estop)) return;
-  mirror = on; $('mirror').setAttribute('aria-pressed', on); renderState();
+  if (on && !awake) setAwake(true, false);
+  mirror = on;
+  $('mirror').setAttribute('aria-pressed', on);
+  renderState();
 }
 function setEstop(on, notify = true) {
   if (estop === on) return;
   estop = on;
   $('estop').classList.toggle('on', on);
   $('estop').setAttribute('aria-pressed', on);
-  $('estop').textContent = on ? 'RESUME' : 'E-STOP';
-  if (on) { setMirror(false); bleBusy = false; bleWrite('STOP\n'); }
+  $('estop').textContent = on ? 'Resume' : 'Emergency stop';
+  if (on) { runStop(); recCancel(); setMirror(false); bleBusy = false; bleWrite('STOP\n'); }   // firmware should halt on STOP and on a missed keepalive
   renderState();
   if (notify) wsSend({type: 'estop', on});
 }
+const IDLE_HINT = 'Show ✌, or say “Hey Animus”.';
 function setAwake(on, notify = true) {
   if (on && locked) return;
-  awake = on; if (on) touch();
-  $('transcript').textContent = on ? 'Awake. Speak or type below.' : 'Hold ✌ for 3s to wake, or say "Hey Jarvis".';
-  if (!on) setMirror(false);
+  const was = awake; awake = on;
+  if (on) touch();
+  if (on !== was) setTranscript(on ? 'Awake. Speak or type below.' : IDLE_HINT, on);
+  if (!on) { setMirror(false); if (showMode) setShowMode(false); }
   renderState();
   if (notify) wsSend({type: on ? 'wake' : 'sleep'});
 }
 function setLocked(on, notify = true) {
-  locked = on; store.set('locked', on ? '1' : '0');
-  if (on) { setMirror(false); setAwake(false, false); }
-  $('cmd').disabled = on; $('send').disabled = on; $('mirror').disabled = on;
-  $('transcript').textContent = on ? 'Locked. Hold ✌ for 3s to unlock.' : 'Hold ✌ for 3s to wake, or say "Hey Jarvis".';
+  locked = on;
+  store.set('locked', on ? '1' : '0');
+  if (on) { runStop(); recCancel(); setMirror(false); setAwake(false, false); }
+  ['cmd', 'send', 'cmd2', 'send2', 'mirror', 'showmode'].forEach(id => $(id).disabled = on);
+  setTranscript(on ? 'Locked. Show ✌ to unlock.' : IDLE_HINT);
   renderState();
   if (notify) wsSend({type: 'lock', on});
 }
 $('estop').onclick = () => setEstop(!estop);
 $('mirror').onclick = () => setMirror(!mirror);
-$('shelf-tab').onclick = () => {
-  const open = $('shelf').classList.toggle('open');
-  $('shelf-tab').textContent = 'HARDWARE & TUNING ' + (open ? '▴' : '▾');
-};
-
-function submit() {
-  const q = $('cmd').value.trim();
-  if (!q || locked) return;
-  touch(); $('cmd').value = '';
-  $('transcript').textContent = `“${q}”`;
-  const localRes = localReply(q);
-  if (wsOpen()) wsSend({type: 'text_command', text: q});
-  else { $('reply').hidden = false; $('reply').textContent = localRes; }
+function flashWake() {
+  const v = $('video'); v.classList.remove('flash'); void v.offsetWidth; v.classList.add('flash');
+  setTimeout(() => v.classList.remove('flash'), 1000);
 }
-$('send').onclick = submit;
-$('cmd').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+function wakeByPeace() {
+  if (locked) setLocked(false);
+  setAwake(true, true); flashWake(); toast('Awake.', 1500);
+}
 
-/* Idle attract demo */
+/* ---------- Pose runner, sequence, live record ---------- */
+let stepMs = 1000, recClip = null;
+let seq = []; try { seq = JSON.parse(store.get('seq', 'null')) || ['Open','Fist','Pinch','Point','Peace','Open'].map(name => ({kind: 'pose', name})); } catch { seq = []; }
+const run = {playing: false, segs: [], i: 0, t0: 0, from: null, loop: false, label: ''};
+const busy = () => animating || run.playing;
+const rec = {phase: 'idle', start: 0, end: 0, dur: 5000, samples: [], timer: null};
+
+function mixAngles(a, b, e) { const o = {}; NAMES.forEach(n => o[n] = a[n] + (b[n] - a[n]) * e); return o; }
+function sampleClip(samples, t) {
+  let i = 0; while (i < samples.length - 2 && samples[i + 1].t < t) i++;
+  const a = samples[i], b = samples[Math.min(i + 1, samples.length - 1)], k = b.t > a.t ? clamp((t - a.t) / (b.t - a.t), 0, 1) : 0;
+  const o = {}; NAMES.forEach((n, j) => o[n] = a.a[j] + (b.a[j] - a.a[j]) * k); return o;
+}
+function segFor(it) {
+  if (it.kind === 'clip') return recClip ? {type: 'clip', samples: recClip.samples, dur: recClip.dur, name: 'Recording'} : null;
+  if (it.name === 'Wave') return {type: 'gen', fn: WAVE.fn, dur: WAVE.dur, name: 'Wave'};
+  return {type: 'pose', angles: POSES[it.name], dur: stepMs, name: it.name};
+}
+function showInfo(title, sub, prog) {
+  $('show-title').textContent = title; $('show-sub').textContent = sub; $('show-bar').style.width = (clamp(prog, 0, 1) * 100) + '%';
+}
+function runPlay(segs, label) {
+  if (estop || locked) { toast(estop ? 'Emergency stop is active.' : 'Locked.'); return false; }
+  segs = segs.filter(Boolean); if (!segs.length) return false;
+  if (rec.phase !== 'idle') recCancel();
+  if (!awake) setAwake(true, false);
+  run.segs = segs; run.i = 0; run.playing = true; run.label = label; run.from = {...smooth}; run.t0 = performance.now();
+  $('play-seq').textContent = 'Stop'; touch(); requestAnimationFrame(runTick); renderSeq(label === 'Sequence' ? 0 : -1);
+  return true;
+}
+function runStop() {
+  if (!run.playing) return;
+  run.playing = false; $('play-seq').textContent = 'Play'; renderSeq(-1);
+  showInfo('Live hand', 'Move your hand, or run a pose.', 0);
+}
+function runTick(now) {
+  if (!run.playing) return;
+  if (estop || locked) { runStop(); return; }
+  const seg = run.segs[run.i], t = now - run.t0; let a;
+  if (seg.type === 'pose') { const k = Math.min(1, t / Math.min(450, seg.dur * 0.6)); a = mixAngles(run.from, seg.angles, 1 - Math.pow(1 - k, 3)); }
+  else if (seg.type === 'gen') a = seg.fn(t / 1000);
+  else a = sampleClip(seg.samples, t);
+  NAMES.forEach(n => { smooth[n] = raw[n] = a[n]; });
+  paintJoints(); emit(smooth, SEND_MS); touch();
+  showInfo(seg.name, run.segs.length > 1 ? `Step ${run.i + 1} of ${run.segs.length}` : run.label, t / seg.dur);
+  if (t >= seg.dur) {
+    run.i++;
+    if (run.i >= run.segs.length) { if (run.loop) run.i = 0; else { runStop(); return; } }
+    run.from = {...smooth}; run.t0 = now;
+    if (run.label === 'Sequence') renderSeq(run.i);
+  }
+  requestAnimationFrame(runTick);
+}
+function applyPose(name) {
+  if (name === 'Wave') return runPlay([segFor({kind: 'pose', name})], 'Pose');
+  return runPlay([{type: 'pose', angles: POSES[name], dur: 800, name}], 'Pose');
+}
+function playSeq() { return runPlay(seq.map(segFor), 'Sequence'); }
+function playClip() { return recClip ? runPlay([segFor({kind: 'clip'})], 'Recording') : false; }
+
+function renderSeq(active = -1) {
+  const ol = $('seq'); ol.replaceChildren();
+  if (!seq.length) ol.append(el('li', 'Empty. Add poses with the + buttons.', 'empty'));
+  seq.forEach((it, i) => {
+    const li = el('li'); if (i === active) li.className = 'on';
+    const mk = (txt, label, fn) => { const b = el('button', txt); b.type = 'button'; b.setAttribute('aria-label', label); b.onclick = fn; return b; };
+    li.append(el('span', String(i + 1), 'n'), el('span', it.kind === 'clip' ? 'Recording' : it.name),
+      mk('↑', 'Move up', () => { if (i) { [seq[i - 1], seq[i]] = [seq[i], seq[i - 1]]; renderSeq(); } }),
+      mk('↓', 'Move down', () => { if (i < seq.length - 1) { [seq[i + 1], seq[i]] = [seq[i], seq[i + 1]]; renderSeq(); } }),
+      mk('✕', 'Remove', () => { seq.splice(i, 1); renderSeq(); }));
+    ol.append(li);
+  });
+  store.set('seq', JSON.stringify(seq.filter(x => x.kind === 'pose')));
+}
+POSE_NAMES.forEach(name => {
+  const c = el('div', null, 'chip'), a = el('button', name), p = el('button', '+');
+  a.type = p.type = 'button'; p.setAttribute('aria-label', 'Add ' + name + ' to the sequence');
+  a.onclick = () => applyPose(name);
+  p.onclick = () => { seq.push({kind: 'pose', name}); renderSeq(); };
+  c.append(a, p); $('poses').append(c);
+});
+$('play-seq').onclick = () => { if (run.playing) runStop(); else if (!playSeq()) toast('Add some poses to the sequence first.'); };
+$('loop').onclick = () => { run.loop = !run.loop; $('loop').setAttribute('aria-pressed', run.loop); };
+$('clear-seq').onclick = () => { seq = []; renderSeq(); };
+$('step-ms').oninput = e => { stepMs = +e.target.value; $('step-v').textContent = (stepMs / 1000).toFixed(1) + ' s'; };
+renderSeq();
+
+function recSet(text) { $('rec-status').textContent = text; }
+function recStart() {
+  if (rec.phase !== 'idle') return;
+  if (trackingOff) { toast('Hand tracking is unavailable, so there is nothing to record.'); return; }
+  if (locked || estop) { toast(estop ? 'Emergency stop is active.' : 'Locked.'); return; }
+  runStop(); rec.dur = +$('rec-dur').value * 1000; rec.samples = []; rec.phase = 'count'; rec.end = performance.now() + 3000;
+  $('rec-overlay').hidden = false; $('rec-btn').textContent = 'Cancel'; renderState();
+  clearInterval(rec.timer); rec.timer = setInterval(recTick, 50); recTick();
+}
+function recTick() {
+  const now = performance.now();
+  if (rec.phase === 'count') {
+    const left = rec.end - now;
+    if (left <= 0) { rec.phase = 'rec'; rec.start = now; renderState(); }
+    else { $('rec-big').textContent = Math.ceil(left / 1000); $('rec-label').textContent = 'Get ready. Show your hand.'; $('rec-bar').style.width = '0%'; recSet('Starting in ' + Math.ceil(left / 1000) + '…'); return; }
+  }
+  if (rec.phase === 'rec') {
+    const el_ = now - rec.start;
+    $('rec-big').textContent = Math.max(0, (rec.dur - el_) / 1000).toFixed(1);
+    $('rec-label').textContent = 'Recording'; $('rec-bar').style.width = clamp(el_ / rec.dur, 0, 1) * 100 + '%';
+    recSet('Recording… ' + rec.samples.length + ' frames');
+    if (el_ >= rec.dur) recFinish();
+  }
+}
+function recCancel() {
+  if (rec.phase === 'idle') return;
+  rec.phase = 'idle'; clearInterval(rec.timer); $('rec-overlay').hidden = true; $('rec-btn').textContent = 'Record'; recSet('Recording cancelled.'); renderState();
+}
+function recFinish() {
+  clearInterval(rec.timer); rec.phase = 'idle'; $('rec-overlay').hidden = true; $('rec-btn').textContent = 'Record'; renderState();
+  if (rec.samples.length < 8) { recSet('No hand was tracked. Keep your hand in view and try again.'); toast('No hand movement captured.'); return; }
+  recClip = {samples: rec.samples, dur: rec.samples[rec.samples.length - 1].t};
+  $('rec-play').disabled = $('rec-add').disabled = false;
+  recSet(`Recorded ${(recClip.dur / 1000).toFixed(1)} s, ${rec.samples.length} frames. Playing it back.`);
+  setTimeout(() => playClip(), 500);
+}
+$('rec-btn').onclick = () => rec.phase === 'idle' ? recStart() : recCancel();
+$('rec-play').onclick = () => { if (run.playing) runStop(); else playClip(); };
+$('rec-add').onclick = () => { if (recClip) { seq.push({kind: 'clip'}); renderSeq(); toast('Recording added to the sequence.'); } };
+
+/* ---------- Wake word: continuous, restart-safe speech recognition ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let sr = null, srRunning = false, srFails = 0, srRestart = null, srSession = 0, srBlocked = false, srAsked = false;
+const woke = new Set(); let wakeCool = 0, heardT = null;
+function lev(a, b) {
+  const d = Array.from({length: a.length + 1}, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+function findWake(alts) {                 // fuzzy match "animus" and "jarvis" across alternatives
+  for (const alt of alts) {
+    const toks = alt.trim().split(/\s+/), norm = toks.map(w => w.toLowerCase().replace(/[^a-z]/g, ''));
+    for (let i = 0; i < norm.length; i++) for (const len of [1, 2]) {
+      if (i + len > norm.length) continue;
+      const cand = norm.slice(i, i + len).join(''); if (cand.length < 4) continue;
+      const hey = i > 0 && /^(hey|hi|ok|okay|hay|yo)$/.test(norm[i - 1]);
+      const d1 = lev(cand, 'animus'), d2 = lev(cand, 'jarvis');
+      if (d1 <= 1 || (d1 === 2 && hey) || d2 <= 1) return {toks, i, len};
+    }
+  }
+  return null;
+}
+function setWake(kind, extra = '') {
+  const m = {listening: ['ok', 'Wake word listening'], heard: ['live', 'Heard: ' + extra], offline: ['', 'Wake word paused, offline'],
+    blocked: ['bad', 'Wake word blocked, allow the microphone'], unsupported: ['bad', 'Wake word needs Chrome'], off: ['', 'Wake word off'], locked: ['', 'Wake word paused, locked']}[kind];
+  $('wake-dot').className = 'dot ' + m[0]; $('wake-txt').textContent = m[1];
+}
+function srSync() {
+  const want = !!SR && !srBlocked && srAsked && !isOffline();
+  if (!SR) { setWake('unsupported'); return; }
+  if (srBlocked) { setWake('blocked'); return; }
+  if (!srAsked) { setWake('off'); return; }
+  if (isOffline()) { setWake('offline'); try { sr && sr.abort(); } catch {} return; }
+  if (want && !srRunning) srStart();
+}
+function srStart() {
+  clearTimeout(srRestart);
+  try {
+    sr = new SR(); sr.continuous = true; sr.interimResults = true; sr.lang = 'en-US'; sr.maxAlternatives = 3;
+    sr.onstart = () => { srRunning = true; srSession++; srFails = 0; setWake(locked ? 'locked' : 'listening'); };
+    sr.onend = () => {
+      srRunning = false;
+      if (srBlocked || isOffline()) { srSync(); return; }
+      srRestart = setTimeout(srStart, Math.min(250 + srFails * 400, 3000));   // restart-safe: Chrome ends sessions on its own
+    };
+    sr.onerror = e => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { srBlocked = true; setWake('blocked'); toast('Microphone blocked. Allow it in the browser address bar to use the wake word.'); }
+      else if (e.error === 'network') { srFails++; setWake('offline'); if (srFails === 2) toast('Speech recognition could not reach its server. Wake word paused.'); }
+      else if (e.error !== 'no-speech' && e.error !== 'aborted') srFails++;
+    };
+    sr.onresult = onSpeech;
+    sr.start();
+  } catch (e) { srFails++; srRestart = setTimeout(srStart, 1500); }
+}
+function onWakeHeard(hit) {
+  wakeCool = performance.now() + 1500;
+  setWake('heard', hit.toks.slice(hit.i, hit.i + hit.len).join(' ')); clearTimeout(heardT); heardT = setTimeout(() => { if (isOffline() || srBlocked) srSync(); else setWake(locked ? 'locked' : 'listening'); }, 1800);
+  if (locked) { toast('Locked. Show ✌ to unlock.'); return; }
+  armedUntil = performance.now() + ARMED_MS; setTimeout(renderState, ARMED_MS + 100);
+  flashWake(); setAwake(true, false); touch();
+  setTranscriptMarked(hit.toks, hit.i, hit.len); renderState();
+}
+function onSpeech(e) {
+  const now = performance.now();
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    const r = e.results[i], alts = [...r].map(a => a.transcript), key = srSession + ':' + i;
+    $('hearing').textContent = 'Heard: ' + alts[0]; clearTimeout(onSpeech.t); onSpeech.t = setTimeout(() => $('hearing').textContent = '', 4000);
+    if (isSpeaking() || locked) continue;                      // ignore our own voice and the lock
+    const hit = findWake(alts);
+    if (hit && !woke.has(key) && now >= wakeCool) { woke.add(key); onWakeHeard(hit); }
+    if (!r.isFinal) continue;
+    if (woke.has(key)) {
+      woke.delete(key);
+      const h = findWake(alts), cmd = h ? h.toks.slice(h.i + h.len).join(' ').trim() : '';
+      if (cmd.length > 1) { armedUntil = 0; sendVoice(cmd); }
+    } else if (now < armedUntil && alts[0].trim().length > 1) { armedUntil = 0; sendVoice(alts[0].trim()); }
+  }
+}
+function sendVoice(text) {                // skip if the Python core already handled the same utterance
+  if (performance.now() - lastCoreTranscriptAt < 4000) return;
+  runCommand(text, 'voice');
+}
+
+/* ---------- Idle demo ---------- */
 const fmtUp = () => { const s = Math.floor((performance.now() - t0) / 1000); return `${Math.floor(s / 60)}m ${s % 60}s`; };
 const SLIDES = [
-  ['VOICE CORE', () => [['Status', wsOpen() ? 'Online' : 'Offline'], ['Messages', stats.msgs], ['Wake', '✌ or "Hey Jarvis"']]],
-  ['VISION SYSTEM', () => [['Frame Rate', stats.fps + ' FPS'], ['Latency', stats.lat + ' ms'], ['Model', 'MediaPipe Hands']]],
-  ['ROBOT ARM', () => [['BLE Link', bleChar ? 'Linked' : 'Offline'], ['Device', btName || 'None'], ['Battery', btBatt || '--']]],
-  ['SERVO BREATHING', () => NAMES.map(n => [n.toUpperCase(), Math.round(smooth[n]) + '°'])],
+  ['Voice core', () => [['Status', wsOpen() ? 'Linked' : 'Offline'], ['Messages received', stats.msgs], ['Wake', 'Say “Hey Animus” or show ✌']]],
+  ['Vision', () => [['Frame rate', stats.fps + ' fps'], ['Latency', stats.lat + ' ms'], ['Tracking', trackingOff ? 'Unavailable' : 'One hand']]],
+  ['Robot hand', () => [['Bluetooth', bleChar ? 'Linked' : 'Not linked'], ['Device', btName || 'None'], ['Battery', btBatt || 'Unknown']]],
+  ['Servo output, idle breathing', () => NAMES.map(n => [cap(n), Math.round(smooth[n]) + '°'])],
+  ['System', () => [['Uptime', fmtUp()], ['Network', isOffline() ? 'Offline' : 'Online'], ['Emergency stop', estop ? 'Active' : 'Clear']]],
 ];
 let slideIdx = 0, attractStart = 0, tickTimer = null, slideTimer = null, breatheTimer = null;
 function renderSlide() {
-  const [title, rows] = [SLIDES[slideIdx][0], SLIDES[slideIdx][1]()];
-  $('slide-title').textContent = title;
+  $('slide-title').textContent = SLIDES[slideIdx][0];
   const dl = $('slide-body'); dl.replaceChildren();
-  rows.forEach(([k, v]) => {
-    const dt = document.createElement('dt'), dd = document.createElement('dd');
-    dt.textContent = k; dd.textContent = v; dl.append(dt, dd);
-  });
+  SLIDES[slideIdx][1]().forEach(([k, v]) => { dl.append(el('dt', k), el('dd', String(v))); });
 }
 function startAttract() {
   attract = true; attractStart = performance.now(); slideIdx = 0;
   $('attract').hidden = false; renderSlide();
   tickTimer = setInterval(renderSlide, 500);
-  slideTimer = setInterval(() => { slideIdx = (slideIdx + 1) % SLIDES.length; renderSlide(); }, 4000);
-  breatheTimer = setInterval(() => {
+  slideTimer = setInterval(() => {
+    $('slide').style.opacity = 0;
+    setTimeout(() => { slideIdx = (slideIdx + 1) % SLIDES.length; renderSlide(); $('slide').style.opacity = 1; }, 350);
+  }, 4000);
+  breatheTimer = setInterval(() => {      // slow, small, low-rate: gentle on servos and battery
     const t = performance.now() - attractStart;
     NAMES.forEach((n, i) => { smooth[n] = raw[n] = 150 + 28 * Math.sin(2 * Math.PI * (t / 8000 - i * 0.06)); });
     paintJoints(); emit(smooth, 100);
@@ -556,18 +1234,18 @@ function stopAttract() {
 function touch() { lastActive = performance.now(); if (attract) stopAttract(); }
 setInterval(() => {
   const idle = performance.now() - lastActive;
-  if (!attract && !awake && idle > ATTRACT_MS) startAttract();
-  if (awake && AUTO_SLEEP_MS && idle > AUTO_SLEEP_MS && !mirror && !animating) playSleepAnimation(() => setAwake(false));
+  if (!attract && !awake && !showMode && rec.phase === 'idle' && idle > ATTRACT_MS) startAttract();
+  if (awake && AUTO_SLEEP_MS && idle > AUTO_SLEEP_MS && !mirror && !showMode && !busy() && rec.phase === 'idle') playSleepAnimation(() => setAwake(false));
 }, 500);
 
-/* Vision & MediaPipe Hands */
+/* ---------- Vision & gestures ---------- */
 const ang3 = (a, b, c) => {
   const v = [a.x-b.x, a.y-b.y, a.z-b.z], w = [c.x-b.x, c.y-b.y, c.z-b.z];
   const m = Math.hypot(...v) * Math.hypot(...w);
-  return m ? Math.acos(Math.max(-1, Math.min(1, (v[0]*w[0] + v[1]*w[1] + v[2]*w[2]) / m))) * 180 / Math.PI : 180;
+  return m ? Math.acos(clamp((v[0]*w[0] + v[1]*w[1] + v[2]*w[2]) / m, -1, 1)) * 180 / Math.PI : 180;
 };
 const holds = {};
-function hold(key, active, ms, done) {
+function hold(key, active, ms, done) {    // returns 0..1 progress, fires done() at 1
   if (!active) { holds[key] = null; return 0; }
   const now = performance.now();
   holds[key] ??= now;
@@ -575,20 +1253,29 @@ function hold(key, active, ms, done) {
   if (p >= 1) { holds[key] = null; done(); return 1; }
   return p;
 }
-let fistFrames = 0;
-function resetGestures() { Object.keys(holds).forEach(k => holds[k] = null); fistFrames = 0; $('gesture-bar').hidden = true; }
+let fistFrames = 0, peaceFrames = 0, peaceOff = 0, peaceArmed = true, peaceCool = 0, gestureBlockUntil = 0;
+function resetGestures() { Object.keys(holds).forEach(k => holds[k] = null); fistFrames = peaceFrames = 0; $('gesture-bar').hidden = true; }
+function notice(msg) { $('notice').hidden = !msg; $('notice').textContent = msg || ''; }
 
-renderState(); paintJoints(); drawSpark(); updateMetrics();
+renderArm(); renderConn(); renderState(); paintJoints(); drawSpark(); updateMetrics(); updateLayout();
+setWake(SR ? 'off' : 'unsupported');
 
 $('start').onclick = async () => {
   $('home').style.display = 'none';
   $('hud').style.display = 'flex';
   connectWS();
   if (locked) setLocked(true, false);
+  srAsked = true; srSync();               // starts the wake word (the Launch click is the user gesture)
+  probe();
+  if (typeof Hands === 'undefined') {
+    trackingOff = true; if (!netDown) { netDown = true; updateLayout(); }
+    notice('Hand tracking is unavailable: MediaPipe could not load. Check the network and reload. Poses, show mode and the 3D hand still work.');
+    toast('Offline mode on. Hand tracking needs MediaPipe, which could not load.'); return;
+  }
   try {
-    if (typeof Hands === 'undefined') throw new Error('MediaPipe failed to load.');
     const video = $('webcam'), canvas = $('out'), ctx = canvas.getContext('2d');
-    video.srcObject = await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 1280}, height: {ideal: 720}, frameRate: {ideal: 30}}, audio: false});
+    video.srcObject = await navigator.mediaDevices.getUserMedia({
+      video: {width: {ideal: 1280}, height: {ideal: 720}, frameRate: {ideal: 30}}, audio: false});
     await new Promise(r => { video.onloadedmetadata = () => video.play().then(r, r); });
 
     const hands = new Hands({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
@@ -607,48 +1294,60 @@ $('start').onclick = async () => {
       if (!lm) { resetGestures(); return; }
       lastHandAt = performance.now();
       touch();
-      
-      // Classic red dots and blue connection lines restored
-      drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#1e73ff', lineWidth: 3});
-      drawLandmarks(ctx, lm, {color: '#ff1744', fillColor: '#ffffff', radius: 4});
-      if (animating) return;
+      drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#4285F4', lineWidth: 3});
+      drawLandmarks(ctx, lm, {color: '#FF3344', fillColor: '#FFFFFF', radius: 4});
 
+      // metric 3D landmarks avoid the 16:9 distortion; fall back to image landmarks scaled by aspect
       const wl = res.multiHandWorldLandmarks && res.multiHandWorldLandmarks[0];
       const asp = video.videoHeight / video.videoWidth || 9 / 16;
       const P = wl || lm.map(p => ({x: p.x, y: p.y * asp, z: p.z}));
+      if (wl) track3D(wl);
 
       const target = {};
       NAMES.forEach(n => {
         const [a, b, c] = JOINTS[n], [lo, hi] = RANGE[n];
         const t = (ang3(P[a], P[b], P[c]) - lo) / (hi - lo);
-        target[n] = Math.max(0, Math.min(1, 0.5 + (t - 0.5) * gain)) * 180;
+        target[n] = clamp(0.5 + (t - 0.5) * gain, 0, 1) * 180;   // sensitivity = gain around mid-range
         raw[n] = target[n];
-        smooth[n] = smooth[n] * (1 - alpha) + target[n] * alpha;
       });
-      paintJoints();
 
-      const open = n => smooth[n] > 120, closed = n => smooth[n] < 60;
-
+      // Fist = instant e-stop (raw values, ~3 frames of debounce). Works in every mode, even while a pose runs.
       fistFrames = NAMES.every(n => target[n] < 55) ? fistFrames + 1 : 0;
       if (fistFrames >= 3 && !estop && (FIST_ESTOP_IN_MIRROR || !mirror)) setEstop(true);
 
-      const T = lm.map(p => ({x: p.x, y: p.y * asp}));
-      const tv = {x: T[4].x - T[2].x, y: T[4].y - T[2].y}, tl = Math.hypot(tv.x, tv.y) || 1;
-      const thumbOnly = smooth.thumb > 100 && ['index','middle','ring','pinky'].every(n => smooth[n] < 70);
-      const thumbsUp = thumbOnly && -tv.y / tl > 0.6, thumbsDown = thumbOnly && tv.y / tl > 0.6;
+      if (busy()) return;                     // a pose, sequence, recording playback or sleep animation owns the output
+      NAMES.forEach(n => { smooth[n] = smooth[n] * (1 - alpha) + target[n] * alpha; });   // smoothness slider
+      paintJoints();
+      if (rec.phase === 'rec') rec.samples.push({t: performance.now() - rec.start, a: NAMES.map(n => smooth[n])});
 
+      const now = performance.now();
+      const open = n => smooth[n] > 120, closed = n => smooth[n] < 60;
       const peace = open('index') && open('middle') && closed('ring') && closed('pinky');
+      const shaka = smooth.thumb > 110 && open('pinky') && closed('index') && closed('middle') && closed('ring');
       const palm = NAMES.every(open);
 
-      const pk = hold('peace', peace && (!awake || locked), 3000, () => { if (locked) setLocked(false); else setAwake(true); });
-      const pl = hold('palm', palm && !locked, 3000, () => playSleepAnimation(() => setLocked(true)));
-      hold('up', thumbsUp && awake && !locked && !estop, 600, () => setMirror(true));
-      hold('down', thumbsDown && awake && !locked, 600, () => setMirror(false));
+      // Peace sign = instant wake or unlock: 3 stable frames, must be released before it can fire again, then a short cooldown
+      peaceFrames = peace ? peaceFrames + 1 : 0;
+      peaceOff = peace ? 0 : peaceOff + 1;
+      if (peaceOff >= 6) peaceArmed = true;
+      if (peaceFrames >= PEACE_FRAMES && peaceArmed && now >= peaceCool && (!awake || locked)) {
+        peaceArmed = false; peaceCool = now + PEACE_COOLDOWN_MS; gestureBlockUntil = now + GESTURE_BLOCK_MS; wakeByPeace();
+      }
+      const blocked = now < gestureBlockUntil;
 
-      const prog = Math.max(pk, pl);
+      const thumbDir = (() => { const a = lm[2], b = lm[4], dy = (b.y - a.y) * asp, dx = b.x - a.x; return dy / (Math.hypot(dx, dy) || 1); })();
+      const thumbOnly = smooth.thumb > 100 && ['index','middle','ring','pinky'].every(n => smooth[n] < 70);
+      const thumbsUp = thumbOnly && -thumbDir > 0.6, thumbsDown = thumbOnly && thumbDir > 0.6;
+
+      const pl = hold('palm', palm && !locked && !blocked, 3000, () => playSleepAnimation(() => setLocked(true)));
+      const sk = hold('shaka', shaka && !locked && !blocked && !showMode, 500, () => { gestureBlockUntil = performance.now() + GESTURE_BLOCK_MS; setShowMode(true); });
+      hold('up', thumbsUp && awake && !locked && !estop && !blocked, 600, () => setMirror(true));
+      hold('down', thumbsDown && awake && !locked && !blocked, 600, () => setMirror(false));
+
+      const prog = Math.max(pl, sk);
       $('gesture-bar').hidden = prog <= 0;
       if (prog > 0) {
-        $('gesture-txt').textContent = pk >= pl ? `Keep holding ✌ to ${locked ? 'unlock' : 'wake'}` : 'Keep holding ✋ to lock';
+        $('gesture-txt').textContent = pl >= sk ? 'Keep holding ✋ to lock' : 'Keep holding 🤙 for show mode';
         $('gesture-fill').style.width = (prog * 100) + '%';
       }
 
@@ -659,15 +1358,16 @@ $('start').onclick = async () => {
     const loop = async t => {
       if (t - last >= 1000 / 30 && video.readyState >= 2) {
         last = t; sendStart = performance.now();
-        try { await hands.send({image: video}); } catch (e) {}
+        try { await hands.send({image: video}); } catch (e) { console.warn(e); }
       }
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
   } catch (err) {
-    alert('Failed to initialize HUD: ' + err.message);
-    $('home').style.display = 'block';
-    $('hud').style.display = 'none';
+    console.error(err);
+    trackingOff = true;
+    notice('Camera or tracking could not start: ' + (err && err.message ? err.message : err) + '. Allow the camera and reload. Poses, show mode and the 3D hand still work.');
+    toast('Hand tracking could not start.');
   }
 };
 </script>
